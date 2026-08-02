@@ -1,0 +1,7 @@
+services:
+  lineageshield:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      CONTEXT_PROVIDER: demo

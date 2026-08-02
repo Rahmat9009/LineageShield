@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LineageShield</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">DATAHUB AGENT HACKATHON</div>
+        <h1>LineageShield</h1>
+        <p>Investigate the blast radius of a data change before it breaks pipelines, dashboards, or production ML.</p>
+      </div>
+      <div class="status"><span></span> Demo context connected</div>
+    </header>
+
+    <section class="workspace">
+      <form id="change-form" class="panel form-panel">
+        <div class="panel-heading">
+          <div><div class="step">01</div><h2>Propose a change</h2></div>
+          <button type="button" id="load-demo" class="ghost">Load demo</button>
+        </div>
+
+        <label>Dataset URN<input id="asset-urn" required /></label>
+
+        <div class="grid-two">
+          <label>Column<input id="column" required /></label>
+          <label>Change type
+            <select id="change-type">
+              <option value="rename">Rename</option>
+              <option value="drop">Drop</option>
+              <option value="type_change">Type change</option>
+              <option value="add">Add</option>
+            </select>
+          </label>
+        </div>
+
+        <label>New name or data type<input id="new-value" /></label>
+        <label>Reason<textarea id="reason" rows="3"></textarea></label>
+
+        <button class="primary" type="submit">
+          <span>Run impact investigation</span><strong>→</strong>
+        </button>
+      </form>
+
+      <section class="panel result-panel">
+        <div id="empty-state" class="empty-state">
+          <div class="radar"><span></span><span></span><span></span></div>
+          <h2>Ready to investigate</h2>
+          <p>Submit a schema change to reveal downstream lineage, owners, governance risks, and remediation code.</p>
+        </div>
+
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <div><h2>Tracing context graph</h2><p>Inspecting lineage, criticality, governance, and quality signals…</p></div>
+        </div>
+
+        <div id="result" class="hidden">
+          <div class="result-top">
+            <div><div class="step">02</div><h2>Merge decision</h2></div>
+            <button id="download-json" class="ghost">Export JSON</button>
+          </div>
+
+          <div class="decision-row">
+            <div id="decision" class="decision">BLOCK</div>
+            <div class="score-wrap">
+              <div class="score-label"><span>Risk score</span><strong id="risk-score">0/100</strong></div>
+              <div class="meter"><span id="meter-fill"></span></div>
+              <div id="risk-level" class="risk-level">CRITICAL</div>
+            </div>
+          </div>
+
+          <p id="explanation" class="explanation"></p>
+
+          <div class="section-title"><h3>Affected context</h3><span id="asset-count"></span></div>
+          <div id="assets" class="asset-list"></div>
+
+          <div class="section-title"><h3>Why the score is high</h3></div>
+          <div id="factors" class="factor-list"></div>
+
+          <div class="section-title"><h3>Required approvals</h3></div>
+          <div id="approvals" class="chips"></div>
+
+          <div class="section-title"><h3>Generated safeguards</h3></div>
+          <div class="tabs">
+            <button class="tab active" data-tab="migration">Migration</button>
+            <button class="tab" data-tab="compatibility">Compatibility</button>
+            <button class="tab" data-tab="tests">Tests</button>
+            <button class="tab" data-tab="pr">PR summary</button>
+          </div>
+          <pre id="artifact-code"></pre>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

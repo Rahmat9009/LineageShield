@@ -1,0 +1,137 @@
+{
+  "assets": [
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,prod.customers,PROD)",
+      "name": "prod.customers",
+      "asset_type": "dataset",
+      "platform": "Snowflake",
+      "owners": [
+        "Customer Data Platform"
+      ],
+      "tags": [
+        "PII",
+        "CERTIFIED"
+      ],
+      "criticality": "high",
+      "usage_score": 91,
+      "fields": [
+        "customer_id",
+        "customer_region",
+        "legacy_status",
+        "created_at"
+      ],
+      "quality_status": "failing"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,analytics.customer_metrics,PROD)",
+      "name": "analytics.customer_metrics",
+      "asset_type": "pipeline",
+      "platform": "dbt",
+      "owners": [
+        "Analytics Engineering"
+      ],
+      "tags": [
+        "CERTIFIED"
+      ],
+      "criticality": "high",
+      "usage_score": 83,
+      "fields": [
+        "customer_id",
+        "customer_region",
+        "lifetime_value"
+      ],
+      "quality_status": "passing"
+    },
+    {
+      "urn": "urn:li:dashboard:(looker,regional_sales)",
+      "name": "Regional Sales Executive Dashboard",
+      "asset_type": "dashboard",
+      "platform": "Looker",
+      "owners": [
+        "Revenue Analytics"
+      ],
+      "tags": [
+        "EXECUTIVE"
+      ],
+      "criticality": "critical",
+      "usage_score": 96,
+      "fields": [
+        "customer_region",
+        "revenue"
+      ],
+      "quality_status": "passing"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:spark,features.customer_revenue,PROD)",
+      "name": "features.customer_revenue",
+      "asset_type": "feature_table",
+      "platform": "Spark",
+      "owners": [
+        "ML Platform"
+      ],
+      "tags": [
+        "PRODUCTION_ML"
+      ],
+      "criticality": "critical",
+      "usage_score": 79,
+      "fields": [
+        "customer_id",
+        "customer_region",
+        "rolling_revenue_90d"
+      ],
+      "quality_status": "warning"
+    },
+    {
+      "urn": "urn:li:mlModel:(revenue_forecaster,PROD)",
+      "name": "Revenue Forecasting Model",
+      "asset_type": "ml_model",
+      "platform": "MLflow",
+      "owners": [
+        "Forecasting Science"
+      ],
+      "tags": [
+        "PRODUCTION",
+        "TIER_1"
+      ],
+      "criticality": "critical",
+      "usage_score": 88,
+      "fields": [
+        "customer_region",
+        "rolling_revenue_90d"
+      ],
+      "quality_status": "passing"
+    }
+  ],
+  "edges": [
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,prod.customers,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:dbt,analytics.customer_metrics,PROD)",
+      "via_column": "customer_region"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:dbt,analytics.customer_metrics,PROD)",
+      "target": "urn:li:dashboard:(looker,regional_sales)",
+      "via_column": "customer_region"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:dbt,analytics.customer_metrics,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:spark,features.customer_revenue,PROD)",
+      "via_column": "customer_region"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:spark,features.customer_revenue,PROD)",
+      "target": "urn:li:mlModel:(revenue_forecaster,PROD)",
+      "via_column": "customer_region"
+    }
+  ],
+  "glossary_terms": [
+    "Customer Region",
+    "Net Revenue",
+    "Active Customer"
+  ],
+  "context_notes": [
+    "customer_region is used for executive revenue reporting.",
+    "The feature pipeline feeds a Tier-1 production forecasting model.",
+    "A freshness assertion on prod.customers is currently failing."
+  ]
+}

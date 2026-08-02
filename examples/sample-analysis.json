@@ -1,0 +1,4 @@
+{
+  "note": "Run the application and export a fresh analysis from the interface.",
+  "scenario": "Rename prod.customers.customer_region to sales_region"
+}
