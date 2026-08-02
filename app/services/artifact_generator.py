@@ -59,7 +59,7 @@ class ArtifactGenerator:
         else:
             migration_sql = (
                 f"ALTER TABLE {table_name}\n"
-                f"ADD COLUMN {column} {new_value or 'VARCHAR'};"
+                f"ADD COLUMN {column} {new_value};"
             )
             compatibility_sql = "-- No compatibility view required."
             rollback = [f"Drop the newly added column {column}."]
@@ -78,11 +78,17 @@ class ArtifactGenerator:
             "                severity: warn\n"
         )
 
+        rationale = (
+            f"**Rationale:** {request.reason}\n\n"
+            if request.reason
+            else ""
+        )
         pr_summary = (
             "## LineageShield change review\n\n"
             f"**Asset:** `{request.asset_urn}`\n"
             f"**Change:** `{request.change_type}` on `{column}`\n"
             f"**New value:** `{request.new_value or 'N/A'}`\n\n"
+            f"{rationale}"
             "### Generated safeguards\n"
             "- Migration SQL\n"
             "- Temporary compatibility layer\n"
@@ -101,8 +107,10 @@ class ArtifactGenerator:
 
     @staticmethod
     def _table_name(urn: str) -> str:
-        try:
-            inner = urn.split(",", 1)[1]
-            return inner.rsplit(",", 1)[0]
-        except (IndexError, ValueError):
-            return "prod.customers"
+        if urn.startswith("urn:li:dataset:(") and "," in urn:
+            try:
+                inner = urn.split("(", 1)[1].rsplit(")", 1)[0]
+                return inner.rsplit(",", 1)[0].rsplit(",", 1)[-1]
+            except (IndexError, ValueError):
+                pass
+        return "target_table"

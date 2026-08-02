@@ -1,7 +1,10 @@
 .venv/
+.datahub-venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.coverage
+htmlcov/
 .env
 .DS_Store
 .idea/

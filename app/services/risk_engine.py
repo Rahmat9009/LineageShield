@@ -10,11 +10,12 @@ class RiskEngine:
         context: ContextGraph,
     ) -> tuple[int, list[RiskFactor], list[Asset]]:
         factors: list[RiskFactor] = []
-        affected = [
-            asset
+        affected_by_urn = {
+            asset.urn: asset
             for asset in context.assets
             if asset.urn != context.root_asset.urn
-        ]
+        }
+        affected = list(affected_by_urn.values())
 
         def add(label: str, points: int, evidence: str) -> None:
             factors.append(
@@ -61,7 +62,7 @@ class RiskEngine:
         dashboards = [
             asset
             for asset in affected
-            if asset.asset_type == "dashboard"
+            if asset.asset_type in {"dashboard", "chart"}
         ]
         if dashboards:
             dashboard_points = min(

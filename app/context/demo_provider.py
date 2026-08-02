@@ -16,13 +16,17 @@ class DemoContextProvider(ContextProvider):
         assets = [Asset(**asset) for asset in self._raw["assets"]]
         asset_map = {asset.urn: asset for asset in assets}
 
-        root = asset_map.get(request.asset_urn, assets[0])
+        source = asset_map.get(request.asset_urn, assets[0])
+        root = source.model_copy(
+            update={"dependency_type": "Source asset", "hops": 0}
+        )
         relevant_urns = {root.urn}
         frontier = {root.urn}
+        hop_by_urn = {root.urn: 0}
         all_edges = [LineageEdge(**edge) for edge in self._raw["edges"]]
         selected_edges: list[LineageEdge] = []
 
-        for _ in range(3):
+        for depth in range(1, 4):
             next_frontier: set[str] = set()
             for edge in all_edges:
                 column_matches = edge.via_column in {None, request.column}
@@ -30,11 +34,25 @@ class DemoContextProvider(ContextProvider):
                     selected_edges.append(edge)
                     relevant_urns.add(edge.target)
                     next_frontier.add(edge.target)
+                    hop_by_urn.setdefault(edge.target, depth)
             frontier = next_frontier
             if not frontier:
                 break
 
-        affected = [asset_map[urn] for urn in relevant_urns if urn in asset_map]
+        affected = [
+            asset_map[urn].model_copy(
+                update={
+                    "dependency_type": (
+                        "Source asset"
+                        if urn == root.urn
+                        else "Column-level demo lineage"
+                    ),
+                    "hops": hop_by_urn.get(urn, 1),
+                }
+            )
+            for urn in relevant_urns
+            if urn in asset_map
+        ]
 
         return ContextGraph(
             root_asset=root,
@@ -43,3 +61,6 @@ class DemoContextProvider(ContextProvider):
             glossary_terms=self._raw.get("glossary_terms", []),
             context_notes=self._raw.get("context_notes", []),
         )
+
+    async def healthcheck(self) -> tuple[bool, str]:
+        return True, "Bundled demo metadata is ready; live DataHub is not in use."

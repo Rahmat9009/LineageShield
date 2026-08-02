@@ -1,13 +1,14 @@
-# Enable live DataHub lineage
+# Live DataHub setup
 
-Copy these files into the corresponding locations in your existing
-LineageShield project, replacing the old files:
+The live DataHub lineage patch is already incorporated in this repository. Do not copy older provider, risk-engine, or frontend files over the current implementation.
 
-- `app/context/datahub_provider.py`
-- `app/services/risk_engine.py`
-- `app/static/app.js`
+Create a local `.env` from the live example:
 
-Then create a file named `.env` in the project root with:
+```powershell
+Copy-Item .env.live.example .env
+```
+
+Confirm these values and add a token only if the local instance requires one:
 
 ```env
 APP_NAME=LineageShield
@@ -17,33 +18,20 @@ DATAHUB_GMS_TOKEN=
 DATAHUB_MUTATIONS_ENABLED=false
 ```
 
-Keep Docker Desktop and the DataHub quickstart running.
-
-Activate the LineageShield environment and restart the website:
+Keep Docker Desktop and the DataHub quickstart running. Install the live dependencies, then start LineageShield:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:app --reload
+python -m pip install -r requirements-datahub.txt
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Open:
+Open `http://127.0.0.1:8000`. The header should report **Live DataHub connected**. If DataHub is unavailable, the application still imports and serves an explicit retryable connection state.
 
-```text
-http://127.0.0.1:8000
-```
-
-The status badge should say:
-
-```text
-Live DataHub connected
-```
-
-The default form now uses this real showcase asset:
+The **Sample scenario** action uses:
 
 ```text
 urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)
 ```
 
-The first live version reads downstream lineage from DataHub. Owners, tags,
-usage, quality assertions, write-back, and GitHub PR creation are later
-milestones.
+LineageShield first requests downstream column lineage and falls back to entity lineage. Owner, tag, usage, and quality enrichment remain later milestones; the provider does not fabricate them.

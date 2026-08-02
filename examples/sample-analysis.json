@@ -1,4 +1,5 @@
 {
-  "note": "Run the application and export a fresh analysis from the interface.",
-  "scenario": "Rename prod.customers.customer_region to sales_region"
+  "note": "Run the live application and export a fresh report; affected assets are never hardcoded in this file.",
+  "asset_urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+  "scenario": "Rename ORDER_ID to PURCHASE_ID"
 }
