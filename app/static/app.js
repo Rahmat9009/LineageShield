@@ -347,9 +347,14 @@ function normalizeRootAsset(result) {
     asset_type: "dataset",
     platform: "unknown",
     criticality: "high",
+    criticality_source: "fallback",
     owners: [],
     tags: [],
-    quality_status: "unknown"
+    glossary_terms: [],
+    fields: [],
+    quality_status: "unknown",
+    usage_score: 0,
+    metadata_sources: {}
   };
 }
 
@@ -374,10 +379,15 @@ function renderDecision(result) {
   elements.platformMetric.textContent = String(platforms.length);
   elements.platformSummary.textContent = displayPlatformList(platforms);
   elements.approvalMetric.textContent = String(approvals.length);
+  const metadataSummary = result.metadata_summary || {};
   elements.approvalSummary.textContent = approvals.length
     ? `${approvals.length} owner${approvals.length === 1 ? "" : "s"} identified`
     : (result.provider === "datahub"
-      ? "Owner metadata not loaded"
+      ? (metadataSummary.datahub_entities_enriched > 0
+        ? (metadataSummary.assets_with_owners > 0
+          ? "No high-impact owner approval required"
+          : "No owners returned by DataHub")
+        : "Owner metadata unavailable")
       : "No owner approval required");
 }
 
@@ -389,24 +399,77 @@ function metadataPair(label, value) {
   return [term, description];
 }
 
+function summarizeMetadataList(values, {empty = "None stored in DataHub", limit = 6} = {}) {
+  if (!Array.isArray(values) || !values.length) return empty;
+  if (values.length <= limit) return values.join(", ");
+  return `${values.slice(0, limit).join(", ")} +${values.length - limit}`;
+}
+
+function metadataSourceLabel(source) {
+  const labels = {
+    datahub: "DataHub",
+    lineage: "DataHub lineage",
+    inferred: "inferred fallback",
+    fallback: "URN fallback",
+    unavailable: "unavailable",
+    demo: "demo metadata"
+  };
+  return labels[source] || "source unknown";
+}
+
 function inspectAsset(asset) {
   state.selectedAsset = asset;
   const isSource = asset.urn === normalizeRootAsset(state.result).urn;
-  const owners = Array.isArray(asset.owners) && asset.owners.length
-    ? asset.owners.join(", ")
-    : "Not provided";
+  const sources = asset.metadata_sources || {};
+  const ownerDetails = Array.isArray(asset.owner_details) ? asset.owner_details : [];
+  const owners = ownerDetails.length
+    ? ownerDetails.map(owner => owner.ownership_type
+      ? `${owner.label} — ${owner.ownership_type}`
+      : owner.label).join(", ")
+    : (Array.isArray(asset.owners) && asset.owners.length
+      ? asset.owners.join(", ")
+      : (sources.owners === "datahub" ? "None stored in DataHub" : "Unavailable"));
+  const qualitySource = metadataSourceLabel(sources.quality);
+  const usage = sources.usage === "datahub"
+    ? `${asset.usage_score || 0}/100 · DataHub`
+    : "Unavailable · score kept at 0";
+  const fields = summarizeMetadataList(asset.fields, {
+    empty: sources.fields === "datahub" ? "No schema fields stored" : "Unavailable",
+    limit: 5
+  });
+  const structuredPropertyCount = Object.keys(asset.structured_properties || {}).length;
 
   elements.inspectorType.textContent = `${isSource ? "SOURCE · " : ""}${assetTypeLabel(asset.asset_type).toUpperCase()}`;
   elements.inspectorTitle.textContent = asset.name || readableNameFromUrn(asset.urn);
-  elements.inspectorDescription.textContent = isSource
+  elements.inspectorDescription.textContent = asset.description || (isSource
     ? "The proposed column change originates from this asset."
-    : "This asset appears in the live downstream impact response.";
+    : "This asset appears in the live downstream impact response.");
   elements.inspectorMetadata.replaceChildren(
     ...metadataPair("Platform", asset.platform || "Unknown"),
-    ...metadataPair("Criticality", asset.criticality || "Unknown"),
+    ...metadataPair(
+      "Criticality",
+      `${asset.criticality || "Unknown"} · ${metadataSourceLabel(asset.criticality_source)}`
+    ),
     ...metadataPair("Dependency", asset.dependency_type || (isSource ? "Source" : "Downstream")),
     ...metadataPair("Owners", owners),
-    ...metadataPair("Quality", asset.quality_status || "Unknown")
+    ...metadataPair("Tags", summarizeMetadataList(asset.tags)),
+    ...metadataPair("Glossary terms", summarizeMetadataList(asset.glossary_terms)),
+    ...metadataPair("Schema fields", fields),
+    ...metadataPair(
+      "Quality",
+      `${asset.quality_status || "Unknown"} · ${qualitySource}`
+    ),
+    ...metadataPair("Usage", usage),
+    ...metadataPair(
+      "Structured properties",
+      structuredPropertyCount
+        ? `${structuredPropertyCount} from DataHub`
+        : "None available"
+    ),
+    ...metadataPair(
+      "Entity metadata",
+      sources.entity === "datahub" ? "Retrieved directly from DataHub" : "Safe fallbacks only"
+    )
   );
   elements.inspectorUrn.textContent = asset.urn;
   elements.inspectorUrnBlock.classList.remove("is-hidden");
@@ -477,6 +540,7 @@ function assetRow(asset) {
   const criticality = document.createElement("span");
   criticality.className = `criticality-badge ${asset.criticality || "medium"}`;
   criticality.textContent = asset.criticality || "unknown";
+  criticality.title = `Criticality source: ${metadataSourceLabel(asset.criticality_source)}`;
   button.append(identity, context, criticality);
   button.addEventListener("click", () => inspectAsset(asset));
   return button;

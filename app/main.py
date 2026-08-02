@@ -30,6 +30,12 @@ def build_service() -> ChangeImpactService:
         provider = DataHubContextProvider(
             health_timeout_seconds=settings.datahub_health_timeout_seconds,
             lineage_timeout_seconds=settings.datahub_lineage_timeout_seconds,
+            enrichment_timeout_seconds=settings.datahub_enrichment_timeout_seconds,
+            enrichment_request_timeout_seconds=(
+                settings.datahub_enrichment_request_timeout_seconds
+            ),
+            enrichment_concurrency=settings.datahub_enrichment_concurrency,
+            enrichment_batch_size=settings.datahub_enrichment_batch_size,
         )
         return ChangeImpactService(provider)
     return ChangeImpactService(DemoContextProvider())

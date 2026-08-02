@@ -5,6 +5,15 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 ChangeType = Literal["rename", "drop", "type_change", "add"]
 Decision = Literal["ALLOW", "REVIEW", "BLOCK"]
+MetadataSource = Literal[
+    "datahub",
+    "lineage",
+    "inferred",
+    "fallback",
+    "unavailable",
+    "demo",
+]
+MetadataValue = str | int | float | bool
 
 
 class ChangeRequest(BaseModel):
@@ -46,17 +55,38 @@ class ChangeRequest(BaseModel):
         return self
 
 
+class AssetOwner(BaseModel):
+    urn: str
+    label: str
+    ownership_type: str | None = None
+    ownership_type_urn: str | None = None
+
+
 class Asset(BaseModel):
     urn: str
     name: str
     asset_type: str
     platform: str
+    description: str | None = None
     owners: list[str] = Field(default_factory=list)
+    owner_urns: list[str] = Field(default_factory=list)
+    owner_details: list[AssetOwner] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
+    tag_urns: list[str] = Field(default_factory=list)
+    glossary_terms: list[str] = Field(default_factory=list)
+    glossary_term_urns: list[str] = Field(default_factory=list)
+    structured_properties: dict[str, list[MetadataValue]] = Field(
+        default_factory=dict
+    )
     criticality: Literal["low", "medium", "high", "critical"] = "medium"
+    criticality_source: MetadataSource = "unavailable"
+    criticality_evidence: str = "No criticality evidence was available."
     usage_score: int = Field(default=0, ge=0, le=100)
+    usage_evidence: str = "No trustworthy normalized usage score was available."
     fields: list[str] = Field(default_factory=list)
     quality_status: Literal["passing", "warning", "failing", "unknown"] = "unknown"
+    quality_evidence: str = "No reliable DataHub quality signal was available."
+    metadata_sources: dict[str, MetadataSource] = Field(default_factory=dict)
     dependency_type: str = "downstream"
     hops: int = Field(default=1, ge=0, le=10)
 
@@ -68,11 +98,27 @@ class LineageEdge(BaseModel):
     dependency_type: str = "column"
 
 
+class MetadataSummary(BaseModel):
+    """Coverage counts for the root plus every unique downstream asset."""
+
+    total_assets: int = Field(default=0, ge=0)
+    datahub_entities_enriched: int = Field(default=0, ge=0)
+    assets_with_owners: int = Field(default=0, ge=0)
+    assets_with_tags: int = Field(default=0, ge=0)
+    assets_with_schema_fields: int = Field(default=0, ge=0)
+    assets_with_glossary_terms: int = Field(default=0, ge=0)
+    assets_with_quality_signals: int = Field(default=0, ge=0)
+    assets_with_usage_information: int = Field(default=0, ge=0)
+    assets_with_explicit_criticality: int = Field(default=0, ge=0)
+    enrichment_failures: int = Field(default=0, ge=0)
+
+
 class ContextGraph(BaseModel):
     root_asset: Asset
     assets: list[Asset]
     edges: list[LineageEdge]
     glossary_terms: list[str] = Field(default_factory=list)
+    metadata_summary: MetadataSummary = Field(default_factory=MetadataSummary)
     context_notes: list[str] = Field(default_factory=list)
 
 
@@ -104,4 +150,6 @@ class AnalysisResult(BaseModel):
     artifacts: GeneratedArtifacts
     root_asset: Asset
     lineage_edges: list[LineageEdge]
+    glossary_terms: list[str] = Field(default_factory=list)
+    metadata_summary: MetadataSummary = Field(default_factory=MetadataSummary)
     context_notes: list[str] = Field(default_factory=list)

@@ -34,4 +34,4 @@ The **Sample scenario** action uses:
 urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)
 ```
 
-LineageShield first requests downstream column lineage and falls back to entity lineage. Owner, tag, usage, and quality enrichment remain later milestones; the provider does not fabricate them.
+LineageShield first requests downstream column lineage and falls back to entity lineage. It then retrieves available entity aspects in bounded batches, resolves owners, tags, and glossary terms, and uses identifiable DataHub quality test results. Usage remains unavailable at `0` because no trustworthy normalized score is exposed; the provider does not fabricate it.

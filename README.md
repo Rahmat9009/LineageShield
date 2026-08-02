@@ -14,11 +14,14 @@ A schema change that looks local in a pull request can silently break dbt models
 
 Live mode uses `DataHubClient.from_env()` to:
 
-1. Resolve the submitted DataHub URN as the source asset.
-2. Request downstream column-level lineage for the submitted field.
-3. Fall back to downstream entity-level lineage when fine-grained lineage is absent.
-4. Traverse up to two hops, remove duplicate URNs, and normalize up to 60 affected assets.
-5. Return the real provider evidence to the UI for the lineage graph, asset explorer, and risk engine.
+1. Request downstream column-level lineage for the submitted field.
+2. Fall back to downstream entity-level lineage when fine-grained lineage is absent.
+3. Traverse up to two hops, remove duplicate URNs, and normalize up to 60 affected assets.
+4. Fetch typed entity aspects for the root and downstream datasets, dashboards, charts, data jobs, and supported ML entities in bounded batches.
+5. Resolve referenced users, groups, ownership types, tags, and glossary terms to their DataHub display names while retaining the full URNs.
+6. Return per-field provenance and a metadata coverage summary with the real provider evidence.
+
+Direct metadata can include display name, platform, description, schema fields, owners, tags, glossary terms, structured properties, and identifiable quality test results. Every asset marks values as `datahub`, `lineage`, `inferred`, `fallback`, `unavailable`, or `demo`; inferred criticality is never represented as stored DataHub metadata.
 
 The provider is read-only. LineageShield does not mutate DataHub, create pull requests, or execute generated SQL.
 
@@ -71,6 +74,12 @@ CONTEXT_PROVIDER=datahub
 DATAHUB_GMS_URL=http://localhost:8080
 DATAHUB_GMS_TOKEN=
 DATAHUB_MUTATIONS_ENABLED=false
+DATAHUB_HEALTH_TIMEOUT_SECONDS=6
+DATAHUB_LINEAGE_TIMEOUT_SECONDS=30
+DATAHUB_ENRICHMENT_TIMEOUT_SECONDS=20
+DATAHUB_ENRICHMENT_REQUEST_TIMEOUT_SECONDS=6
+DATAHUB_ENRICHMENT_CONCURRENCY=4
+DATAHUB_ENRICHMENT_BATCH_SIZE=50
 ```
 
 Do not commit `.env` or print a real token. Start LineageShield:
@@ -105,7 +114,13 @@ Demo flow for judges:
 
 - Live DataHub connection and retryable failure state
 - Column-level downstream lineage with entity-level fallback
-- De-duplication and readable names for datasets, jobs, charts, and dashboards
+- De-duplication and typed entity enrichment for the root and downstream assets
+- Resolved DataHub display names for users, groups, ownership roles, tags, and glossary terms, with original URNs retained in the API
+- Real dataset schema fields, descriptions, structured properties, and platform metadata when present
+- Real owner values used for required approvals on high- and critical-impact assets
+- Quality status only when DataHub test results contain an identifiable quality or assertion signal; otherwise `unknown`
+- Per-field metadata provenance and aggregate enrichment coverage in every analysis response
+- Explicit DataHub criticality from exact structured/custom properties when available; deterministic inferred criticality otherwise
 - Interactive SVG blast-radius view using real API results
 - Search and filters for asset type, platform, and criticality
 - Keyboard-accessible node inspection, tabs, controls, and visible focus
@@ -118,6 +133,19 @@ Demo flow for judges:
 - Generated migration SQL, compatibility SQL, schema tests, rollback steps, and PR summary
 - Copy actions, individual artifact downloads, and full JSON export
 - Structured provider health and analysis errors without browser alerts
+
+## Enrichment performance and resilience
+
+The installed DataHub v2 `EntityClient` exposes single-entity `get()` calls. To avoid a serial call per asset, LineageShield uses the SDK's typed OpenAPI `DataHubGraph.get_entities()` batch surface through the client, grouped by entity type and split into batches of 50. The public single-entity client remains a bounded fallback when the bulk surface is unavailable.
+
+- At most four metadata requests run concurrently by default.
+- Each metadata request has a six-second application deadline.
+- The complete enrichment stage has a 20-second deadline.
+- Immediate batch failures are split to isolate the bad record; a timed-out batch is not retried one entity at a time.
+- Missing or failed metadata preserves the lineage result and safe URN fallback instead of failing the investigation.
+- No URNs, access tokens, or response bodies are written to failure logs.
+
+These values can be tuned with the `DATAHUB_ENRICHMENT_*` environment settings shown above. The lineage limit remains 60 downstream assets.
 
 ## Offline demo provider
 
@@ -164,7 +192,7 @@ Automated tests use mocked or bundled providers and do not require DataHub:
 python -m pytest -q
 ```
 
-The suite covers risk thresholds, a large downstream blast radius, live-provider fallback, duplicate removal, readable URN names, the health endpoint, and the analyze endpoint with a mocked provider.
+The suite covers risk thresholds, a large downstream blast radius, lineage fallback and duplicate removal, root and downstream enrichment, reference normalization and deduplication, partial failures and timeouts, metadata provenance, approval owners, readable URN fallbacks, and mocked FastAPI endpoints. It does not require a running DataHub server.
 
 Import check:
 
@@ -176,8 +204,12 @@ python -c "import app.main; print('LineageShield import OK')"
 
 - Live traversal is limited to two hops and 60 normalized downstream assets.
 - DataHub lineage results are represented with the explicit edges available to the provider; the current live normalization connects returned dependents to the source when intermediate path edges are unavailable.
-- Live owners, governance tags, glossary terms, usage, and quality assertions are not yet enriched. The UI says when this metadata is not provided.
-- Criticality for live results is a deterministic inference from asset type, platform, and hop distance—not fabricated catalog metadata.
+- Usage stays at `0` with provenance `unavailable`. The installed SDK exposes raw dataset usage timeseries rather than a canonical, defensible `0–100` popularity score, and the connected sample returned no usage records during capability inspection. LineageShield does not invent a normalization.
+- DataHub Cloud's assertions client is not installed in the local open-source environment (`acryl-datahub-cloud` is required). Quality therefore uses only identifiable quality/assertion entries already present in DataHub's `testResults` aspect; all other assets remain `unknown`.
+- DataHub has no universal criticality field in the retrieved aspects. Exact `criticality` structured/custom property values are treated as explicit; otherwise the existing deterministic asset-type/platform/hop inference is retained and labeled `inferred`.
+- Reference names depend on the typed bulk OpenAPI endpoint. If a referenced user, group, ownership type, tag, or term cannot be resolved, the API keeps its full URN and supplies a readable URN fallback label.
+- The installed DataHub v2 SDK reports its entity API as experimental. LineageShield isolates SDK failures and falls back safely, but future SDK upgrades should be regression-tested.
+- Application timeouts stop waiting for synchronous SDK work; Python cannot forcibly terminate an already-running `to_thread` HTTP call, which may finish in the background.
 - Generated safeguards are review templates. LineageShield does not execute SQL or write to GitHub.
 - No DataHub write-back, authentication, billing, or multi-user state is included.
 

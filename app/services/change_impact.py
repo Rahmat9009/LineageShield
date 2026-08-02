@@ -93,5 +93,7 @@ class ChangeImpactService:
             artifacts=self.artifact_generator.generate(request),
             root_asset=context.root_asset,
             lineage_edges=context.edges,
+            glossary_terms=context.glossary_terms,
+            metadata_summary=context.metadata_summary,
             context_notes=context.context_notes,
         )

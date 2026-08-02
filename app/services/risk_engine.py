@@ -100,7 +100,11 @@ class RiskEngine:
             add(
                 "Business-critical assets",
                 critical_points,
-                ", ".join(asset.name for asset in critical_assets[:8]),
+                ", ".join(
+                    f"{asset.name} "
+                    f"({'DataHub metadata' if asset.criticality_source == 'datahub' else 'inferred fallback'})"
+                    for asset in critical_assets[:8]
+                ),
             )
 
         governed_tags = {

@@ -3,10 +3,20 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from collections import defaultdict
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 from urllib.parse import unquote
 
 from app.context.base import ContextProvider, ProviderUnavailableError
+from app.context.datahub_metadata import (
+    apply_reference_labels,
+    enrich_asset_from_aspects,
+    entity_api_type,
+    entity_type_from_urn,
+    reference_label,
+    summarize_metadata,
+)
 from app.models import Asset, ChangeRequest, ContextGraph, LineageEdge
 
 
@@ -24,10 +34,18 @@ class DataHubContextProvider(ContextProvider):
         *,
         health_timeout_seconds: float = 6.0,
         lineage_timeout_seconds: float = 30.0,
+        enrichment_timeout_seconds: float = 20.0,
+        enrichment_request_timeout_seconds: float = 6.0,
+        enrichment_concurrency: int = 4,
+        enrichment_batch_size: int = 50,
     ) -> None:
         self._client = client
         self.health_timeout_seconds = health_timeout_seconds
         self.lineage_timeout_seconds = lineage_timeout_seconds
+        self.enrichment_timeout_seconds = enrichment_timeout_seconds
+        self.enrichment_request_timeout_seconds = enrichment_request_timeout_seconds
+        self.enrichment_concurrency = max(1, enrichment_concurrency)
+        self.enrichment_batch_size = max(1, enrichment_batch_size)
 
     async def healthcheck(self) -> tuple[bool, str]:
         try:
@@ -97,12 +115,26 @@ class DataHubContextProvider(ContextProvider):
             name=self._name_from_urn(request.asset_urn),
             asset_type="dataset",
             platform=self._platform_from_urn(request.asset_urn),
-            owners=[],
-            tags=[],
             criticality="high",
+            criticality_source="inferred",
+            criticality_evidence=(
+                "Deterministic fallback: source datasets are treated as high impact "
+                "for schema-change review; this is not stored DataHub criticality."
+            ),
             usage_score=0,
             fields=[request.column],
             quality_status="unknown",
+            metadata_sources={
+                "name": "fallback",
+                "platform": "fallback",
+                "owners": "unavailable",
+                "tags": "unavailable",
+                "glossary_terms": "unavailable",
+                "fields": "fallback",
+                "quality": "unavailable",
+                "usage": "unavailable",
+                "criticality": "inferred",
+            },
             dependency_type="Source asset",
             hops=0,
         )
@@ -118,27 +150,49 @@ class DataHubContextProvider(ContextProvider):
             raw_type = str(getattr(result, "type", "") or "")
             asset_type = self._normalize_asset_type(raw_type)
             platform = self._clean_value(getattr(result, "platform", None))
+            platform_source = "lineage" if platform else "fallback"
             if not platform:
                 platform = self._platform_from_urn(urn)
 
-            name = self._display_name(getattr(result, "name", None), urn)
+            lineage_name = self._clean_value(getattr(result, "name", None))
+            name_source = (
+                "lineage"
+                if lineage_name and not lineage_name.startswith("urn:li:")
+                else "fallback"
+            )
+            name = self._display_name(lineage_name, urn)
             hops = self._safe_hops(getattr(result, "hops", 1))
+            criticality = self._infer_criticality(
+                asset_type=asset_type,
+                platform=platform,
+                hops=hops,
+            )
             assets.append(
                 Asset(
                     urn=urn,
                     name=name,
                     asset_type=asset_type,
                     platform=platform or "unknown",
-                    owners=[],
-                    tags=[],
-                    criticality=self._infer_criticality(
-                        asset_type=asset_type,
-                        platform=platform,
-                        hops=hops,
+                    criticality=criticality,
+                    criticality_source="inferred",
+                    criticality_evidence=(
+                        "Deterministic fallback from asset type, platform, and "
+                        f"lineage distance ({hops} hop(s)); this is not stored "
+                        "DataHub criticality."
                     ),
                     usage_score=0,
-                    fields=[],
                     quality_status="unknown",
+                    metadata_sources={
+                        "name": name_source,
+                        "platform": platform_source,
+                        "owners": "unavailable",
+                        "tags": "unavailable",
+                        "glossary_terms": "unavailable",
+                        "fields": "unavailable",
+                        "quality": "unavailable",
+                        "usage": "unavailable",
+                        "criticality": "inferred",
+                    },
                     dependency_type=dependency_label,
                     hops=hops,
                 )
@@ -152,6 +206,17 @@ class DataHubContextProvider(ContextProvider):
                 )
             )
 
+        enriched_assets, enrichment_failures = await self._enrich_assets(assets)
+        root_asset = enriched_assets[0]
+        assets = enriched_assets
+        metadata_summary = summarize_metadata(
+            assets,
+            enrichment_failures=enrichment_failures,
+        )
+        glossary_terms = self._unique_values(
+            term for asset in assets for term in asset.glossary_terms
+        )
+
         fallback_note = (
             "Column-level lineage was available for the submitted field."
             if lineage_source == "column"
@@ -164,7 +229,8 @@ class DataHubContextProvider(ContextProvider):
             root_asset=root_asset,
             assets=assets,
             edges=edges,
-            glossary_terms=[],
+            glossary_terms=glossary_terms,
+            metadata_summary=metadata_summary,
             context_notes=[
                 (
                     f"Live DataHub returned {len(assets) - 1} unique downstream "
@@ -172,11 +238,310 @@ class DataHubContextProvider(ContextProvider):
                 ),
                 fallback_note,
                 (
-                    "Owners, governance tags, usage, and quality assertions are not "
-                    "yet enriched by the live provider."
+                    f"DataHub entity metadata enriched "
+                    f"{metadata_summary.datahub_entities_enriched}/"
+                    f"{metadata_summary.total_assets} assets; owners were present on "
+                    f"{metadata_summary.assets_with_owners}, tags on "
+                    f"{metadata_summary.assets_with_tags}, schema fields on "
+                    f"{metadata_summary.assets_with_schema_fields}, and glossary "
+                    f"terms on {metadata_summary.assets_with_glossary_terms}."
+                ),
+                (
+                    "Quality is populated only from identifiable DataHub quality test "
+                    "results. Usage remains 0 because the installed SDK and connected "
+                    "instance did not provide a trustworthy normalized usage score."
+                ),
+                (
+                    f"{enrichment_failures} metadata lookup(s) failed, timed out, or "
+                    "returned no entity; safe per-asset fallbacks were preserved."
+                    if enrichment_failures
+                    else "All requested metadata lookups completed without an isolated failure."
                 ),
             ],
         )
+
+    async def _enrich_assets(self, assets: list[Asset]) -> tuple[list[Asset], int]:
+        """Enrich assets in bounded batches without making lineage depend on it."""
+
+        client = self._get_client()
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + self.enrichment_timeout_seconds
+        semaphore = asyncio.Semaphore(self.enrichment_concurrency)
+        graph = getattr(client, "_graph", None) or getattr(client, "graph", None)
+        batch_get = getattr(graph, "get_entities", None)
+
+        primary_aspects: dict[str, Mapping[str, Any]] = {}
+        failures = 0
+        if callable(batch_get):
+            groups: dict[str, list[str]] = defaultdict(list)
+            for asset in assets:
+                api_type = entity_api_type(asset.urn)
+                if api_type:
+                    groups[api_type].append(asset.urn)
+            primary_aspects, failures = await self._fetch_grouped_batches(
+                batch_get,
+                groups,
+                semaphore=semaphore,
+                deadline=deadline,
+            )
+        else:
+            entity_client = getattr(client, "entities", None)
+            entity_get = getattr(entity_client, "get", None)
+            if callable(entity_get):
+                primary_aspects, failures = await self._fetch_individual_entities(
+                    entity_get,
+                    [asset.urn for asset in assets if entity_api_type(asset.urn)],
+                    semaphore=semaphore,
+                    deadline=deadline,
+                )
+
+        enriched = [
+            enrich_asset_from_aspects(asset, primary_aspects.get(asset.urn, {}))
+            for asset in assets
+        ]
+
+        # The public EntityClient does not support users, groups, or tags. Resolve
+        # those labels through the same typed bulk API when it is available.
+        if not callable(batch_get):
+            return enriched, failures
+
+        reference_groups: dict[str, list[str]] = defaultdict(list)
+        reference_api_types = {
+            "corpuser": "corpuser",
+            "corpgroup": "corpGroup",
+            "ownershiptype": "ownershipType",
+            "tag": "tag",
+            "glossaryterm": "glossaryTerm",
+        }
+        for asset in enriched:
+            for urn in (
+                *asset.owner_urns,
+                *(
+                    detail.ownership_type_urn
+                    for detail in asset.owner_details
+                    if detail.ownership_type_urn
+                ),
+                *asset.tag_urns,
+                *asset.glossary_term_urns,
+            ):
+                api_type = reference_api_types.get(entity_type_from_urn(urn))
+                if api_type:
+                    reference_groups[api_type].append(urn)
+
+        reference_aspects, reference_failures = await self._fetch_grouped_batches(
+            batch_get,
+            reference_groups,
+            semaphore=semaphore,
+            deadline=deadline,
+        )
+        failures += reference_failures
+
+        reference_type_by_urn = {
+            urn: api_type
+            for api_type, urns in reference_groups.items()
+            for urn in urns
+        }
+        labels = {
+            urn: reference_label(reference_type_by_urn[urn], urn, aspects)
+            for urn, aspects in reference_aspects.items()
+            if urn in reference_type_by_urn
+        }
+        owner_labels = {
+            urn: label
+            for urn, label in labels.items()
+            if entity_type_from_urn(urn) in {"corpuser", "corpgroup"}
+        }
+        tag_labels = {
+            urn: label
+            for urn, label in labels.items()
+            if entity_type_from_urn(urn) == "tag"
+        }
+        ownership_type_labels = {
+            urn: label
+            for urn, label in labels.items()
+            if entity_type_from_urn(urn) == "ownershiptype"
+        }
+        term_labels = {
+            urn: label
+            for urn, label in labels.items()
+            if entity_type_from_urn(urn) == "glossaryterm"
+        }
+        return (
+            [
+                apply_reference_labels(
+                    asset,
+                    owner_labels=owner_labels,
+                    ownership_type_labels=ownership_type_labels,
+                    tag_labels=tag_labels,
+                    term_labels=term_labels,
+                )
+                for asset in enriched
+            ],
+            failures,
+        )
+
+    async def _fetch_grouped_batches(
+        self,
+        batch_get: Callable[..., Mapping[str, Any]],
+        groups: Mapping[str, Sequence[str]],
+        *,
+        semaphore: asyncio.Semaphore,
+        deadline: float,
+    ) -> tuple[dict[str, Mapping[str, Any]], int]:
+        task_specs: dict[asyncio.Task, tuple[str, list[str]]] = {}
+        for entity_type, raw_urns in groups.items():
+            urns = self._unique_values(raw_urns)
+            for offset in range(0, len(urns), self.enrichment_batch_size):
+                chunk = urns[offset : offset + self.enrichment_batch_size]
+                task = asyncio.create_task(
+                    self._fetch_batch_resilient(
+                        batch_get,
+                        entity_type,
+                        chunk,
+                        semaphore=semaphore,
+                    )
+                )
+                task_specs[task] = (entity_type, chunk)
+
+        if not task_specs:
+            return {}, 0
+
+        remaining = max(0.0, deadline - asyncio.get_running_loop().time())
+        if not remaining:
+            for task in task_specs:
+                task.cancel()
+            await asyncio.gather(*task_specs, return_exceptions=True)
+            return {}, sum(len(urns) for _, urns in task_specs.values())
+
+        done, pending = await asyncio.wait(task_specs, timeout=remaining)
+        records: dict[str, Mapping[str, Any]] = {}
+        failures = sum(len(task_specs[task][1]) for task in pending)
+        for task in pending:
+            task.cancel()
+        if pending:
+            logger.warning(
+                "DataHub metadata enrichment deadline reached with %d batch(es) pending",
+                len(pending),
+            )
+            await asyncio.gather(*pending, return_exceptions=True)
+
+        for task in done:
+            try:
+                task_records, task_failures = task.result()
+            except Exception as exc:  # Defensive: each worker normally contains failures.
+                entity_type, urns = task_specs[task]
+                logger.warning(
+                    "DataHub %s metadata batch failed unexpectedly for %d item(s) (%s)",
+                    entity_type,
+                    len(urns),
+                    type(exc).__name__,
+                )
+                failures += len(urns)
+                continue
+            records.update(task_records)
+            failures += len(task_failures)
+        return records, failures
+
+    async def _fetch_batch_resilient(
+        self,
+        batch_get: Callable[..., Mapping[str, Any]],
+        entity_type: str,
+        urns: list[str],
+        *,
+        semaphore: asyncio.Semaphore,
+    ) -> tuple[dict[str, Mapping[str, Any]], set[str]]:
+        try:
+            async with semaphore:
+                raw = await asyncio.wait_for(
+                    asyncio.to_thread(batch_get, entity_type, urns),
+                    timeout=self.enrichment_request_timeout_seconds,
+                )
+            if not isinstance(raw, Mapping):
+                raise TypeError("DataHub batch response was not a mapping")
+            records = {
+                str(urn): aspects
+                for urn, aspects in raw.items()
+                if str(urn) in urns and isinstance(aspects, Mapping)
+            }
+            return records, set(urns) - set(records)
+        except TimeoutError:
+            logger.warning(
+                "DataHub %s metadata batch timed out for %d item(s)",
+                entity_type,
+                len(urns),
+            )
+            return {}, set(urns)
+        except Exception as exc:
+            logger.warning(
+                "DataHub %s metadata batch failed for %d item(s) (%s)",
+                entity_type,
+                len(urns),
+                type(exc).__name__,
+            )
+            if len(urns) <= 1:
+                return {}, set(urns)
+            midpoint = len(urns) // 2
+            left, right = await asyncio.gather(
+                self._fetch_batch_resilient(
+                    batch_get,
+                    entity_type,
+                    urns[:midpoint],
+                    semaphore=semaphore,
+                ),
+                self._fetch_batch_resilient(
+                    batch_get,
+                    entity_type,
+                    urns[midpoint:],
+                    semaphore=semaphore,
+                ),
+            )
+            return ({**left[0], **right[0]}, left[1] | right[1])
+
+    async def _fetch_individual_entities(
+        self,
+        entity_get: Callable[[str], Any],
+        urns: Sequence[str],
+        *,
+        semaphore: asyncio.Semaphore,
+        deadline: float,
+    ) -> tuple[dict[str, Mapping[str, Any]], int]:
+        async def fetch(urn: str) -> tuple[str, Mapping[str, Any] | None]:
+            try:
+                async with semaphore:
+                    entity = await asyncio.wait_for(
+                        asyncio.to_thread(entity_get, urn),
+                        timeout=self.enrichment_request_timeout_seconds,
+                    )
+                aspects = getattr(entity, "_aspects", None)
+                return urn, aspects if isinstance(aspects, Mapping) else None
+            except Exception as exc:
+                logger.warning(
+                    "DataHub entity metadata lookup failed for type %s (%s)",
+                    self._entity_type_from_urn(urn),
+                    type(exc).__name__,
+                )
+                return urn, None
+
+        unique_urns = self._unique_values(urns)
+        tasks = {asyncio.create_task(fetch(urn)): urn for urn in unique_urns}
+        if not tasks:
+            return {}, 0
+        remaining = max(0.0, deadline - asyncio.get_running_loop().time())
+        done, pending = await asyncio.wait(tasks, timeout=remaining)
+        for task in pending:
+            task.cancel()
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
+
+        records: dict[str, Mapping[str, Any]] = {}
+        failures = len(pending)
+        for task in done:
+            urn, aspects = task.result()
+            if aspects is None:
+                failures += 1
+            else:
+                records[urn] = aspects
+        return records, failures
 
     def _get_client(self) -> Any:
         if self._client is not None:
@@ -358,3 +723,15 @@ class DataHubContextProvider(ContextProvider):
             word if word.isupper() and len(word) <= 3 else word.capitalize()
             for word in text.split()
         )
+
+    @staticmethod
+    def _unique_values(values: Iterable[Any]) -> list[str]:
+        unique: list[str] = []
+        seen: set[str] = set()
+        for raw_value in values:
+            value = str(raw_value or "").strip()
+            if not value or value in seen:
+                continue
+            seen.add(value)
+            unique.append(value)
+        return unique

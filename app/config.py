@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     datahub_mutations_enabled: bool = False
     datahub_health_timeout_seconds: float = Field(default=6.0, gt=0, le=60)
     datahub_lineage_timeout_seconds: float = Field(default=30.0, gt=0, le=120)
+    datahub_enrichment_timeout_seconds: float = Field(default=20.0, gt=0, le=120)
+    datahub_enrichment_request_timeout_seconds: float = Field(
+        default=6.0,
+        gt=0,
+        le=60,
+    )
+    datahub_enrichment_concurrency: int = Field(default=4, ge=1, le=12)
+    datahub_enrichment_batch_size: int = Field(default=50, ge=1, le=100)
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -61,7 +61,7 @@ function nodeGroup(asset, box, {source = false} = {}) {
     class: `node-group ${source ? "source-node" : ""}`.trim(),
     tabindex: "0",
     role: "button",
-    "aria-label": `${source ? "Source asset" : "Downstream asset"}: ${asset.name}. ${assetTypeLabel(asset.asset_type)}, ${asset.platform || "unknown platform"}, ${asset.criticality || "unknown"} criticality.`
+    "aria-label": `${source ? "Source asset" : "Downstream asset"}: ${asset.name}. ${assetTypeLabel(asset.asset_type)}, ${asset.platform || "unknown platform"}, ${asset.criticality || "unknown"} criticality (${asset.criticality_source || "source unknown"}).`
   });
 
   const card = svgElement("rect", {

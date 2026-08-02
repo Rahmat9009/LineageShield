@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from app.context.base import ContextProvider
-from app.models import Asset, ChangeRequest, ContextGraph, LineageEdge
+from app.models import Asset, ChangeRequest, ContextGraph, LineageEdge, MetadataSummary
 
 
 class DemoContextProvider(ContextProvider):
@@ -13,7 +13,28 @@ class DemoContextProvider(ContextProvider):
         self._raw = json.loads(path.read_text(encoding="utf-8"))
 
     async def build_context(self, request: ChangeRequest) -> ContextGraph:
-        assets = [Asset(**asset) for asset in self._raw["assets"]]
+        assets = [
+            Asset(**asset).model_copy(
+                update={
+                    "criticality_source": "demo",
+                    "criticality_evidence": "Bundled demo metadata; not read from DataHub.",
+                    "usage_evidence": "Bundled demo metadata; not read from DataHub.",
+                    "quality_evidence": "Bundled demo metadata; not read from DataHub.",
+                    "metadata_sources": {
+                        "name": "demo",
+                        "platform": "demo",
+                        "owners": "demo",
+                        "tags": "demo",
+                        "glossary_terms": "demo",
+                        "fields": "demo",
+                        "quality": "demo",
+                        "usage": "demo",
+                        "criticality": "demo",
+                    },
+                }
+            )
+            for asset in self._raw["assets"]
+        ]
         asset_map = {asset.urn: asset for asset in assets}
 
         source = asset_map.get(request.asset_urn, assets[0])
@@ -59,6 +80,7 @@ class DemoContextProvider(ContextProvider):
             assets=affected,
             edges=selected_edges,
             glossary_terms=self._raw.get("glossary_terms", []),
+            metadata_summary=MetadataSummary(total_assets=len(affected)),
             context_notes=self._raw.get("context_notes", []),
         )
 
