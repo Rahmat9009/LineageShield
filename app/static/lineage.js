@@ -61,6 +61,8 @@ function nodeGroup(asset, box, {source = false} = {}) {
     class: `node-group ${source ? "source-node" : ""}`.trim(),
     tabindex: "0",
     role: "button",
+    "aria-pressed": "false",
+    "data-asset-urn": asset.urn,
     "aria-label": `${source ? "Source asset" : "Downstream asset"}: ${asset.name}. ${assetTypeLabel(asset.asset_type)}, ${asset.platform || "unknown platform"}, ${asset.criticality || "unknown"} criticality (${asset.criticality_source || "source unknown"}).`
   });
 
@@ -70,7 +72,7 @@ function nodeGroup(asset, box, {source = false} = {}) {
     y: box.y,
     width: box.width,
     height: box.height,
-    rx: 9
+    rx: 5
   });
   const bar = svgElement("rect", {
     class: `node-type-bar ${source ? "dataset" : groupName}`,
@@ -117,9 +119,13 @@ function nodeGroup(asset, box, {source = false} = {}) {
   return group;
 }
 
-export function renderLineage(container, {rootAsset, assets = [], edges = []}, onSelect) {
+export function renderLineage(
+  container,
+  {rootAsset, assets = [], edges = [], selectedUrn = null, selectRoot = true},
+  onSelect = () => {}
+) {
   container.replaceChildren();
-  if (!rootAsset) return;
+  if (!rootAsset) return null;
 
   const grouped = GROUPS
     .map(group => ({
@@ -234,22 +240,41 @@ export function renderLineage(container, {rootAsset, assets = [], edges = []}, o
 
   const nodeElements = [];
   const allNodes = [rootAsset, ...assets];
+  const applySelection = (asset, {notify = true, focus = false} = {}) => {
+    const connectedUrns = new Set([asset.urn]);
+    availableEdges.forEach(edge => {
+      if (edge.source === asset.urn) connectedUrns.add(edge.target);
+      if (edge.target === asset.urn) connectedUrns.add(edge.source);
+    });
+
+    nodeElements.forEach(item => {
+      const selected = item.asset.urn === asset.urn;
+      item.element.classList.toggle("is-selected", selected);
+      item.element.classList.toggle("is-related", !selected && connectedUrns.has(item.asset.urn));
+      item.element.classList.toggle("is-muted", !connectedUrns.has(item.asset.urn));
+      item.element.setAttribute("aria-pressed", String(selected));
+    });
+    edgeElements.forEach(item => {
+      item.element.classList.toggle(
+        "is-connected",
+        item.edge.source === asset.urn || item.edge.target === asset.urn
+      );
+      item.element.classList.toggle(
+        "is-muted",
+        item.edge.source !== asset.urn && item.edge.target !== asset.urn
+      );
+    });
+    svg.dataset.selectedUrn = asset.urn;
+    const selectedNode = nodeElements.find(item => item.asset.urn === asset.urn)?.element;
+    if (focus) selectedNode?.focus({preventScroll: true});
+    if (notify) onSelect(asset, selectedNode);
+  };
+
   allNodes.forEach((asset, index) => {
     const box = positions.get(asset.urn);
     if (!box) return;
     const group = nodeGroup(asset, box, {source: index === 0});
-    const select = () => {
-      nodeElements.forEach(item => {
-        item.element.classList.toggle("is-selected", item.asset.urn === asset.urn);
-      });
-      edgeElements.forEach(item => {
-        item.element.classList.toggle(
-          "is-connected",
-          item.edge.source === asset.urn || item.edge.target === asset.urn
-        );
-      });
-      onSelect(asset);
-    };
+    const select = () => applySelection(asset);
     group.addEventListener("click", select);
     group.addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") {
@@ -262,6 +287,32 @@ export function renderLineage(container, {rootAsset, assets = [], edges = []}, o
   });
 
   container.append(svg);
-  nodeElements[0]?.element.classList.add("is-selected");
-  onSelect(rootAsset);
+  const initialUrn = selectedUrn || (selectRoot ? rootAsset.urn : null);
+  if (initialUrn) {
+    const initialAsset = allNodes.find(asset => asset.urn === initialUrn) || rootAsset;
+    applySelection(initialAsset, {notify: false});
+  }
+
+  return {
+    fit() {
+      svg.classList.add("is-fit");
+      container.scrollTo({left: 0, top: 0, behavior: "auto"});
+    },
+    resetSelection() {
+      delete svg.dataset.selectedUrn;
+      nodeElements.forEach(item => {
+        item.element.classList.remove("is-selected", "is-related", "is-muted");
+        item.element.setAttribute("aria-pressed", "false");
+      });
+      edgeElements.forEach(item => item.element.classList.remove("is-connected", "is-muted"));
+    },
+    selectUrn(urn, options = {}) {
+      const asset = allNodes.find(item => item.urn === urn);
+      if (asset) applySelection(asset, options);
+      return Boolean(asset);
+    },
+    getNode(urn) {
+      return nodeElements.find(item => item.asset.urn === urn)?.element || null;
+    }
+  };
 }

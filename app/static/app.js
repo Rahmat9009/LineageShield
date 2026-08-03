@@ -143,18 +143,50 @@ const elements = {
   agentExecutions: byId("agent-executions"),
   agentFallbackReason: byId("agent-fallback-reason"),
   agentEvidenceReferences: byId("agent-evidence-references"),
+  lineageSurface: byId("lineage-surface"),
+  lineageGraphRegion: byId("lineage-graph-region"),
   lineageCanvas: byId("lineage-canvas"),
+  lineageAssetList: byId("lineage-asset-list"),
+  lineageLegend: byId("lineage-legend"),
+  fitLineage: byId("fit-lineage"),
+  resetLineageSelection: byId("reset-lineage-selection"),
+  toggleLineageList: byId("toggle-lineage-list"),
+  lineageScopeFallback: byId("lineage-scope-fallback"),
+  lineageScopeCount: byId("lineage-scope-count"),
+  lineageScopeHops: byId("lineage-scope-hops"),
+  lineageScopeLimit: byId("lineage-scope-limit"),
   lineageNote: byId("lineage-note"),
+  assetInspector: byId("asset-inspector"),
+  assetInspectorBackdrop: byId("asset-inspector-backdrop"),
+  closeAssetInspector: byId("close-asset-inspector"),
   inspectorType: byId("inspector-type"),
   inspectorTitle: byId("node-inspector-title"),
+  inspectorPlatformType: byId("inspector-platform-type"),
   inspectorDescription: byId("inspector-description"),
+  inspectorDescriptionNote: byId("inspector-description-note"),
+  inspectorFullDescription: byId("inspector-full-description"),
+  inspectorDescriptionFull: byId("inspector-description-full"),
   inspectorMetadata: byId("inspector-metadata"),
+  inspectorDependency: byId("inspector-dependency"),
+  inspectorCriticality: byId("inspector-criticality"),
+  inspectorCriticalitySource: byId("inspector-criticality-source"),
+  inspectorQuality: byId("inspector-quality"),
+  inspectorQualitySource: byId("inspector-quality-source"),
+  inspectorUsage: byId("inspector-usage"),
+  inspectorOwners: byId("inspector-owners"),
+  inspectorTags: byId("inspector-tags"),
+  inspectorGlossary: byId("inspector-glossary"),
+  inspectorFields: byId("inspector-fields"),
+  inspectorProperties: byId("inspector-properties"),
   inspectorUrnBlock: byId("inspector-urn-block"),
   inspectorUrn: byId("inspector-urn"),
+  inspectorCopyStatus: byId("inspector-copy-status"),
   assetSearch: byId("asset-search"),
   typeFilter: byId("asset-type-filter"),
   platformFilter: byId("platform-filter"),
   criticalityFilter: byId("criticality-filter"),
+  failingQualityFilter: byId("failing-quality-filter"),
+  failingQualityCount: byId("failing-quality-count"),
   assetCount: byId("asset-count"),
   assets: byId("assets"),
   assetsEmpty: byId("assets-empty"),
@@ -194,6 +226,12 @@ const state = {
   result: null,
   lastPayload: null,
   selectedAsset: null,
+  inspectorOpen: false,
+  inspectorTrigger: null,
+  lineageController: null,
+  lineageDisplay: "graph",
+  lineageDisplayPreference: null,
+  qualityFailureOnly: false,
   reviewView: "overview",
   proposalExpanded: false,
   artifactTab: "migration",
@@ -459,6 +497,11 @@ function selectReviewView(view, {focusTab = false} = {}) {
     item.hidden = item !== panel;
   });
   elements.reviewViewSelect.value = view;
+  elements.resultView.dataset.activeReviewView = view;
+  if (view === "lineage" && state.lineageDisplayPreference === null) {
+    setLineageDisplay(prefersLineageList() ? "list" : "graph");
+  }
+  updateInspectorVisibility();
   if (focusTab) tab.focus({preventScroll: true});
 }
 
@@ -747,14 +790,6 @@ function renderAgentInvestigation(result) {
   elements.agentEvidenceReferences.replaceChildren(...referenceItems);
 }
 
-function metadataPair(label, value) {
-  const term = document.createElement("dt");
-  const description = document.createElement("dd");
-  term.textContent = label;
-  description.textContent = value;
-  return [term, description];
-}
-
 function summarizeMetadataList(values, {empty = "None stored in DataHub", limit = 6} = {}) {
   if (!Array.isArray(values) || !values.length) return empty;
   if (values.length <= limit) return values.join(", ");
@@ -773,132 +808,413 @@ function metadataSourceLabel(source) {
   return labels[source] || "source unknown";
 }
 
-function inspectAsset(asset) {
-  state.selectedAsset = asset;
+function explicitSourceLabel(source) {
+  return {
+    datahub: "Explicit DataHub metadata",
+    lineage: "DataHub lineage evidence",
+    inferred: "Inferred by LineageShield",
+    fallback: "Derived from the asset URN",
+    unavailable: "Unavailable",
+    demo: "Demo metadata"
+  }[source] || "Source unavailable";
+}
+
+function normalizedDescription(description) {
+  const text = String(description || "").trim();
+  const managedPattern = /<!--\s*LINEAGESHIELD:BEGIN[^>]*-->[\s\S]*?<!--\s*LINEAGESHIELD:END[^>]*-->/gi;
+  const managedBlocks = text.match(managedPattern) || [];
+  const withoutManaged = text.replace(managedPattern, " ").replace(/\s+/g, " ").trim();
+  const normalized = withoutManaged || (text ? "Only managed LineageShield documentation is present." : "No description is available.");
+  const preview = normalized.length > 240 ? `${normalized.slice(0, 239).trimEnd()}…` : normalized;
+  return {text, preview, managedCount: managedBlocks.length};
+}
+
+function renderOwnerDetails(asset, sources) {
+  const ownerDetails = Array.isArray(asset.owner_details) ? asset.owner_details : [];
+  const owners = Array.isArray(asset.owners) ? asset.owners : [];
+  const items = ownerDetails.length
+    ? ownerDetails.map(owner => ({label: owner.label, role: owner.ownership_type || "Role unavailable"}))
+    : owners.map(owner => ({label: owner, role: "Role unavailable"}));
+
+  if (!items.length) {
+    const empty = document.createElement("li");
+    empty.textContent = sources.owners === "datahub"
+      ? "No owners stored in DataHub."
+      : "Owner metadata unavailable.";
+    elements.inspectorOwners.replaceChildren(empty);
+    return;
+  }
+
+  elements.inspectorOwners.replaceChildren(...items.map(owner => {
+    const item = document.createElement("li");
+    const label = document.createElement("strong");
+    const role = document.createElement("span");
+    label.textContent = owner.label || "Unnamed owner";
+    role.textContent = owner.role;
+    item.append(label, role);
+    return item;
+  }));
+}
+
+function renderFieldSummary(asset, sources) {
+  const fields = Array.isArray(asset.fields) ? asset.fields : [];
+  if (!fields.length) {
+    elements.inspectorFields.textContent = sources.fields === "datahub"
+      ? "No schema fields stored in DataHub."
+      : "Schema fields unavailable.";
+    return;
+  }
+
+  const count = document.createElement("strong");
+  count.textContent = `${fields.length} field${fields.length === 1 ? "" : "s"}`;
+  const separator = document.createTextNode(" · ");
+  const preview = document.createElement("span");
+  fields.slice(0, 6).forEach((field, index) => {
+    if (index) preview.append(document.createTextNode(", "));
+    const code = document.createElement("code");
+    code.textContent = field;
+    preview.append(code);
+  });
+  if (fields.length > 6) preview.append(document.createTextNode(` +${fields.length - 6}`));
+  elements.inspectorFields.replaceChildren(count, separator, preview);
+}
+
+function structuredPropertyName(urn) {
+  return String(urn || "Property").split(":").at(-1)
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[._-]+/g, " ");
+}
+
+function structuredPropertyValue(value) {
+  const values = Array.isArray(value) ? value : [value];
+  return values.map(item => typeof item === "object" ? JSON.stringify(item) : String(item)).join(", ");
+}
+
+function renderStructuredProperties(asset, sources) {
+  const entries = Object.entries(asset.structured_properties || {});
+  if (!entries.length) {
+    const row = document.createElement("div");
+    const term = document.createElement("dt");
+    const description = document.createElement("dd");
+    term.textContent = "Properties";
+    description.textContent = sources.structured_properties === "datahub"
+      ? "None stored in DataHub"
+      : "Unavailable";
+    row.append(term, description);
+    elements.inspectorProperties.replaceChildren(row);
+    return;
+  }
+
+  elements.inspectorProperties.replaceChildren(...entries.map(([key, value]) => {
+    const row = document.createElement("div");
+    const term = document.createElement("dt");
+    const code = document.createElement("code");
+    const description = document.createElement("dd");
+    code.textContent = structuredPropertyName(key);
+    description.textContent = structuredPropertyValue(value);
+    term.append(code);
+    row.append(term, description);
+    return row;
+  }));
+}
+
+function isInspectorDialogMode() {
+  return typeof window.matchMedia === "function"
+    && window.matchMedia("(max-width: 1100px)").matches;
+}
+
+function updateInspectorMode() {
+  const dialog = isInspectorDialogMode();
+  elements.assetInspector.setAttribute("role", dialog ? "dialog" : "complementary");
+  if (dialog) elements.assetInspector.setAttribute("aria-modal", "true");
+  else elements.assetInspector.removeAttribute("aria-modal");
+  return dialog;
+}
+
+function updateInspectorVisibility({focus = false} = {}) {
+  const evidenceView = state.reviewView === "lineage" || state.reviewView === "assets";
+  const visible = Boolean(state.selectedAsset && state.inspectorOpen && evidenceView);
+  const dialog = updateInspectorMode();
+  elements.assetInspector.hidden = !visible;
+  elements.assetInspectorBackdrop.hidden = !(visible && dialog);
+  elements.resultView.classList.toggle("is-inspector-open", visible);
+  document.body.classList.toggle("is-inspector-dialog-open", visible && dialog);
+  if (visible && dialog && focus) {
+    const focusInspector = () => elements.assetInspector.focus({preventScroll: true});
+    if (typeof window.requestAnimationFrame === "function") window.requestAnimationFrame(focusInspector);
+    else focusInspector();
+  }
+}
+
+function closeAssetInspector({returnFocus = true} = {}) {
+  const trigger = state.inspectorTrigger;
+  state.inspectorOpen = false;
+  updateInspectorVisibility();
+  if (!returnFocus) return;
+  if (trigger && typeof trigger.focus === "function" && trigger.isConnected !== false) {
+    trigger.focus({preventScroll: true});
+  } else {
+    const panel = elements.reviewPanels.find(item => item.dataset.reviewView === state.reviewView);
+    panel?.focus({preventScroll: true});
+  }
+}
+
+function syncSelectedAssetUI() {
+  const selectedUrn = state.selectedAsset?.urn || "";
+  document.querySelectorAll(".asset-row, .lineage-list-row").forEach(row => {
+    const selected = row.dataset.assetUrn === selectedUrn;
+    row.classList.toggle("is-selected", selected);
+    row.setAttribute("aria-selected", String(selected));
+  });
+  if (selectedUrn) state.lineageController?.selectUrn(selectedUrn, {notify: false});
+}
+
+function renderAssetInspector(asset) {
   const isSource = asset.urn === normalizeRootAsset(state.result).urn;
   const sources = asset.metadata_sources || {};
-  const ownerDetails = Array.isArray(asset.owner_details) ? asset.owner_details : [];
-  const owners = ownerDetails.length
-    ? ownerDetails.map(owner => owner.ownership_type
-      ? `${owner.label} — ${owner.ownership_type}`
-      : owner.label).join(", ")
-    : (Array.isArray(asset.owners) && asset.owners.length
-      ? asset.owners.join(", ")
-      : (sources.owners === "datahub" ? "None stored in DataHub" : "Unavailable"));
-  const qualitySource = metadataSourceLabel(sources.quality);
-  const usage = sources.usage === "datahub"
-    ? `${asset.usage_score || 0}/100 · DataHub`
-    : "Unavailable · score kept at 0";
-  const fields = summarizeMetadataList(asset.fields, {
-    empty: sources.fields === "datahub" ? "No schema fields stored" : "Unavailable",
-    limit: 5
-  });
-  const structuredPropertyCount = Object.keys(asset.structured_properties || {}).length;
+  const description = normalizedDescription(asset.description);
+  const criticalitySource = asset.criticality_source || sources.criticality;
+  const dependency = asset.dependency_type || (isSource ? "Source asset" : "Downstream dependency");
+  const hops = Number(asset.hops || 0);
 
   elements.inspectorType.textContent = `${isSource ? "Source · " : ""}${assetTypeLabel(asset.asset_type)}`;
   elements.inspectorTitle.textContent = asset.name || readableNameFromUrn(asset.urn);
-  elements.inspectorDescription.textContent = asset.description || (isSource
-    ? "The proposed column change originates from this asset."
-    : "This asset appears in the live downstream impact response.");
-  elements.inspectorMetadata.replaceChildren(
-    ...metadataPair("Platform", asset.platform || "Unknown"),
-    ...metadataPair(
-      "Criticality",
-      `${asset.criticality || "Unknown"} · ${metadataSourceLabel(asset.criticality_source)}`
-    ),
-    ...metadataPair("Dependency", asset.dependency_type || (isSource ? "Source" : "Downstream")),
-    ...metadataPair("Owners", owners),
-    ...metadataPair("Tags", summarizeMetadataList(asset.tags)),
-    ...metadataPair("Glossary terms", summarizeMetadataList(asset.glossary_terms)),
-    ...metadataPair("Schema fields", fields),
-    ...metadataPair(
-      "Quality",
-      `${asset.quality_status || "Unknown"} · ${qualitySource}`
-    ),
-    ...metadataPair("Usage", usage),
-    ...metadataPair(
-      "Structured properties",
-      structuredPropertyCount
-        ? `${structuredPropertyCount} from DataHub`
-        : "None available"
-    ),
-    ...metadataPair(
-      "Entity metadata",
-      sources.entity === "datahub" ? "Retrieved directly from DataHub" : "Safe fallbacks only"
-    )
-  );
+  elements.inspectorPlatformType.textContent = `${asset.platform || "Unknown platform"} · ${assetTypeLabel(asset.asset_type)}`;
+  elements.inspectorDependency.textContent = `${dependency} · ${hops} hop${hops === 1 ? "" : "s"}`;
+  elements.inspectorCriticality.textContent = sentenceCase(asset.criticality || "unknown");
+  elements.inspectorCriticality.dataset.state = asset.criticality || "unknown";
+  elements.inspectorCriticalitySource.textContent = criticalitySource === "datahub"
+    ? "Explicit DataHub metadata"
+    : `${explicitSourceLabel(criticalitySource)}${asset.criticality_evidence ? ` — ${asset.criticality_evidence}` : ""}`;
+
+  const qualityIsDataHub = sources.quality === "datahub";
+  elements.inspectorQuality.textContent = qualityIsDataHub
+    ? sentenceCase(asset.quality_status || "unknown")
+    : "Unavailable";
+  elements.inspectorQuality.dataset.state = qualityIsDataHub ? (asset.quality_status || "unknown") : "unknown";
+  elements.inspectorQualitySource.textContent = qualityIsDataHub
+    ? `DataHub evidence — ${asset.quality_evidence || "No quality detail returned."}`
+    : (asset.quality_evidence || "No identifiable DataHub quality result was returned.");
+  elements.inspectorUsage.textContent = sources.usage === "datahub"
+    ? `${asset.usage_score || 0}/100 · DataHub normalized score`
+    : "Unavailable · score retained at 0";
+
+  renderOwnerDetails(asset, sources);
+  elements.inspectorTags.textContent = `${summarizeMetadataList(asset.tags, {
+    empty: sources.tags === "datahub" ? "None stored in DataHub" : "Unavailable"
+  })} · ${explicitSourceLabel(sources.tags)}`;
+  elements.inspectorGlossary.textContent = `${summarizeMetadataList(asset.glossary_terms, {
+    empty: sources.glossary_terms === "datahub" ? "None stored in DataHub" : "Unavailable"
+  })} · ${explicitSourceLabel(sources.glossary_terms)}`;
+  renderFieldSummary(asset, sources);
+  renderStructuredProperties(asset, sources);
+
+  elements.inspectorDescription.textContent = description.preview;
+  elements.inspectorDescriptionFull.textContent = description.text || "No description is available.";
+  elements.inspectorFullDescription.open = false;
+  elements.inspectorFullDescription.classList.toggle("is-hidden", !description.text);
+  elements.inspectorDescriptionNote.classList.toggle("is-hidden", description.managedCount === 0);
+  elements.inspectorDescriptionNote.textContent = description.managedCount
+    ? `${description.managedCount} managed LineageShield documentation block${description.managedCount === 1 ? " was" : "s were"} omitted from this preview.`
+    : "";
   elements.inspectorUrn.textContent = asset.urn;
-  elements.inspectorUrnBlock.classList.remove("is-hidden");
+  elements.inspectorCopyStatus.textContent = "";
+}
+
+function inspectAsset(asset, {trigger = null, focusInspector = true} = {}) {
+  state.selectedAsset = asset;
+  state.inspectorOpen = true;
+  if (trigger) state.inspectorTrigger = trigger;
+  renderAssetInspector(asset);
+  syncSelectedAssetUI();
+  updateInspectorVisibility({focus: focusInspector});
+}
+
+function prefersLineageList() {
+  return typeof window.matchMedia === "function"
+    && window.matchMedia("(max-width: 820px)").matches;
+}
+
+function setLineageDisplay(display, {user = false} = {}) {
+  const showList = display === "list";
+  state.lineageDisplay = showList ? "list" : "graph";
+  if (user) state.lineageDisplayPreference = state.lineageDisplay;
+  elements.lineageSurface.dataset.display = state.lineageDisplay;
+  elements.lineageGraphRegion.hidden = showList;
+  elements.lineageAssetList.hidden = !showList;
+  elements.lineageLegend.hidden = showList;
+  elements.fitLineage.disabled = showList;
+  elements.toggleLineageList.setAttribute("aria-pressed", String(showList));
+  elements.toggleLineageList.textContent = showList ? "View graph" : "View as asset list";
+  if (showList) syncSelectedAssetUI();
+}
+
+function focusAdjacentAssetRow(container, current, direction) {
+  const rows = [...container.querySelectorAll("button")];
+  const index = rows.indexOf(current);
+  if (index < 0) return;
+  const target = Math.min(rows.length - 1, Math.max(0, index + direction));
+  rows[target]?.focus({preventScroll: true});
+}
+
+function lineageListRow(asset, {source = false} = {}) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "lineage-list-row";
+  button.dataset.assetUrn = asset.urn;
+  button.setAttribute("role", "option");
+  button.setAttribute("aria-selected", String(state.selectedAsset?.urn === asset.urn));
+  button.setAttribute("aria-label", `Inspect ${source ? "source asset" : "downstream asset"} ${asset.name || readableNameFromUrn(asset.urn)}`);
+
+  const identity = document.createElement("span");
+  const name = document.createElement("strong");
+  const context = document.createElement("small");
+  const dependency = document.createElement("span");
+  const selected = document.createElement("span");
+  name.textContent = asset.name || readableNameFromUrn(asset.urn);
+  context.textContent = `${asset.platform || "Unknown platform"} · ${assetTypeLabel(asset.asset_type)}`;
+  dependency.textContent = source
+    ? "Source asset"
+    : `${asset.dependency_type || "Downstream dependency"} · ${Number(asset.hops || 0)} hop${Number(asset.hops || 0) === 1 ? "" : "s"}`;
+  selected.className = "asset-selected-label";
+  selected.textContent = "Selected";
+  identity.append(name, context);
+  button.append(identity, dependency, selected);
+  button.classList.toggle("is-selected", state.selectedAsset?.urn === asset.urn);
+  button.addEventListener("click", () => inspectAsset(asset, {trigger: button}));
+  button.addEventListener("keydown", event => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      focusAdjacentAssetRow(elements.lineageAssetList, button, event.key === "ArrowDown" ? 1 : -1);
+    }
+  });
+  return button;
+}
+
+function renderLineageAssetList(rootAsset, assets) {
+  elements.lineageAssetList.replaceChildren(
+    lineageListRow(rootAsset, {source: true}),
+    ...assets.map(asset => lineageListRow(asset))
+  );
 }
 
 function renderLineageSection(result) {
   const rootAsset = normalizeRootAsset(result);
   const edges = result.lineage_edges || result.edges || [];
-  renderLineage(
+  const allAssets = [rootAsset, ...result.affected_assets];
+  const selectedAsset = allAssets.find(asset => asset.urn === state.selectedAsset?.urn) || rootAsset;
+  state.selectedAsset = selectedAsset;
+  state.lineageController = renderLineage(
     elements.lineageCanvas,
-    {rootAsset, assets: result.affected_assets, edges},
-    inspectAsset
+    {rootAsset, assets: result.affected_assets, edges, selectedUrn: selectedAsset.urn},
+    (asset, trigger) => inspectAsset(asset, {trigger})
   );
+  renderLineageAssetList(rootAsset, result.affected_assets);
+
   const notes = Array.isArray(result.context_notes) ? result.context_notes : [];
+  const fallbackUsed = notes.some(note => /entity-level lineage/i.test(note))
+    || result.affected_assets.some(asset => /entity-level/i.test(asset.dependency_type || ""));
+  elements.lineageScopeFallback.textContent = fallbackUsed
+    ? "Entity-level fallback used"
+    : "Column-level lineage";
+  elements.lineageScopeCount.textContent = String(result.affected_assets.length);
+  elements.lineageScopeHops.textContent = "2 downstream hops";
+  elements.lineageScopeLimit.textContent = "60 assets";
   elements.lineageNote.textContent = notes.length
     ? notes.join(" · ")
     : "Lineage scope and metadata reflect the active provider response at investigation time.";
-}
 
-function svgIcon(group) {
-  const paths = {
-    dataset: "M5 4.5h14v6H5v-6Zm0 9h14v6H5v-6Z",
-    pipeline: "M6 4v16m0-8h12m-3-3 3 3-3 3",
-    reporting: "M4 19V10h4v9m4 0V5h4v14m4 0v-6",
-    ml: "M12 4v4m0 8v4M4 12h4m8 0h4M9 9h6v6H9Z",
-    other: "M5 5h14v14H5z"
-  };
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("width", "20");
-  svg.setAttribute("height", "20");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("aria-hidden", "true");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", paths[group] || paths.other);
-  svg.append(path);
-  return svg;
+  state.lineageDisplayPreference = null;
+  setLineageDisplay(prefersLineageList() ? "list" : "graph");
+  renderAssetInspector(selectedAsset);
+  state.inspectorTrigger = state.lineageController?.getNode(selectedAsset.urn) || null;
+  state.inspectorOpen = !isInspectorDialogMode();
+  syncSelectedAssetUI();
+  updateInspectorVisibility();
 }
 
 function assetRow(asset) {
-  const group = assetGroup(asset.asset_type);
   const button = document.createElement("button");
   button.type = "button";
   button.className = "asset-row";
-  button.setAttribute("aria-label", `Inspect ${asset.name || readableNameFromUrn(asset.urn)}`);
+  button.dataset.assetUrn = asset.urn;
+  button.setAttribute("role", "option");
+  button.setAttribute("aria-selected", String(state.selectedAsset?.urn === asset.urn));
+  button.setAttribute("aria-label", `Inspect ${asset.name || readableNameFromUrn(asset.urn)} on ${asset.platform || "unknown platform"}`);
+  button.classList.toggle("is-selected", state.selectedAsset?.urn === asset.urn);
 
   const identity = document.createElement("span");
   identity.className = "asset-identity";
-  const icon = document.createElement("span");
-  icon.className = `asset-icon ${group}`;
-  icon.append(svgIcon(group));
-  const title = document.createElement("span");
-  title.className = "asset-title";
   const name = document.createElement("strong");
   name.textContent = asset.name || readableNameFromUrn(asset.urn);
-  const dependency = document.createElement("small");
-  dependency.textContent = asset.dependency_type || "Downstream dependency";
-  title.append(name, dependency);
-  identity.append(icon, title);
+  const selected = document.createElement("small");
+  selected.className = "asset-selected-label";
+  selected.textContent = "Selected";
+  identity.append(name, selected);
 
   const context = document.createElement("span");
   context.className = "asset-context";
+  context.dataset.label = "Platform / type";
   const platform = document.createElement("strong");
   platform.textContent = asset.platform || "Unknown platform";
   const type = document.createElement("small");
   type.textContent = assetTypeLabel(asset.asset_type);
   context.append(platform, type);
 
+  const dependency = document.createElement("span");
+  dependency.className = "asset-dependency";
+  dependency.dataset.label = "Dependency evidence";
+  const dependencyType = document.createElement("strong");
+  const dependencyHops = document.createElement("small");
+  dependencyType.textContent = asset.dependency_type || "Downstream dependency";
+  dependencyHops.textContent = `${Number(asset.hops || 0)} hop${Number(asset.hops || 0) === 1 ? "" : "s"}`;
+  dependency.append(dependencyType, dependencyHops);
+
   const criticality = document.createElement("span");
-  criticality.className = `criticality-badge ${asset.criticality || "medium"}`;
-  criticality.textContent = asset.criticality || "unknown";
-  criticality.title = `Criticality source: ${metadataSourceLabel(asset.criticality_source)}`;
-  button.append(identity, context, criticality);
-  button.addEventListener("click", () => inspectAsset(asset));
+  criticality.className = "asset-criticality";
+  criticality.dataset.label = "Criticality";
+  const criticalityValue = document.createElement("strong");
+  const criticalitySource = document.createElement("small");
+  criticalityValue.textContent = sentenceCase(asset.criticality || "unknown");
+  criticalitySource.textContent = asset.criticality_source === "datahub" ? "DataHub" : metadataSourceLabel(asset.criticality_source);
+  criticality.append(criticalityValue, criticalitySource);
+
+  const quality = document.createElement("span");
+  quality.className = "asset-quality";
+  quality.dataset.label = "Quality";
+  quality.dataset.state = asset.metadata_sources?.quality === "datahub"
+    ? (asset.quality_status || "unknown")
+    : "unknown";
+  const qualityValue = document.createElement("strong");
+  const qualitySource = document.createElement("small");
+  qualityValue.textContent = asset.metadata_sources?.quality === "datahub"
+    ? sentenceCase(asset.quality_status || "unknown")
+    : "Unknown";
+  qualitySource.textContent = asset.metadata_sources?.quality === "datahub" ? "DataHub" : "Unavailable";
+  quality.append(qualityValue, qualitySource);
+
+  const owner = document.createElement("span");
+  owner.className = "asset-owner";
+  owner.dataset.label = "Owner";
+  const ownerDetails = Array.isArray(asset.owner_details) ? asset.owner_details : [];
+  const owners = (ownerDetails.length ? ownerDetails.map(item => item.label) : (asset.owners || []))
+    .filter(Boolean);
+  const ownerValue = document.createElement("strong");
+  const ownerSource = document.createElement("small");
+  ownerValue.textContent = owners.length
+    ? `${owners[0]}${owners.length > 1 ? ` +${owners.length - 1}` : ""}`
+    : "No owner";
+  ownerSource.textContent = asset.metadata_sources?.owners === "datahub" ? "DataHub" : "Unavailable";
+  owner.append(ownerValue, ownerSource);
+
+  button.append(identity, context, dependency, criticality, quality, owner);
+  button.addEventListener("click", () => inspectAsset(asset, {trigger: button}));
+  button.addEventListener("keydown", event => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      focusAdjacentAssetRow(elements.assets, button, event.key === "ArrowDown" ? 1 : -1);
+    }
+  });
   return button;
 }
 
@@ -930,11 +1246,19 @@ function filteredAssets() {
   const criticality = elements.criticalityFilter.value;
 
   return state.result.affected_assets.filter(asset => {
-    const text = `${asset.name || ""} ${asset.platform || ""} ${asset.asset_type || ""}`.toLowerCase();
+    const ownerText = [
+      ...(asset.owners || []),
+      ...(asset.owner_details || []).map(owner => `${owner.label || ""} ${owner.ownership_type || ""}`)
+    ].join(" ");
+    const text = `${asset.name || ""} ${asset.platform || ""} ${asset.asset_type || ""} ${asset.dependency_type || ""} ${asset.quality_status || ""} ${asset.quality_evidence || ""} ${ownerText}`.toLowerCase();
     return (!query || text.includes(query))
       && (selectedType === "all" || assetGroup(asset.asset_type) === selectedType)
       && (platform === "all" || String(asset.platform || "").toLowerCase() === platform)
-      && (criticality === "all" || asset.criticality === criticality);
+      && (criticality === "all" || asset.criticality === criticality)
+      && (!state.qualityFailureOnly || (
+        asset.quality_status === "failing"
+        && asset.metadata_sources?.quality === "datahub"
+      ));
   });
 }
 
@@ -943,6 +1267,14 @@ function renderAssetList() {
   elements.assets.replaceChildren(...assets.map(assetRow));
   elements.assetCount.textContent = `${assets.length} result${assets.length === 1 ? "" : "s"}`;
   elements.assetsEmpty.classList.toggle("is-hidden", assets.length > 0);
+  const failingCount = state.result?.affected_assets.filter(asset =>
+    asset.quality_status === "failing"
+      && asset.metadata_sources?.quality === "datahub"
+  ).length || 0;
+  elements.failingQualityCount.textContent = String(failingCount);
+  elements.failingQualityFilter.setAttribute("aria-pressed", String(state.qualityFailureOnly));
+  elements.failingQualityFilter.classList.toggle("is-active", state.qualityFailureOnly);
+  syncSelectedAssetUI();
 }
 
 function renderRisk(result) {
@@ -1041,6 +1373,14 @@ function announceCopy(message) {
   }, 2500);
 }
 
+function announceInspectorCopy(message) {
+  window.clearTimeout(state.copyTimer);
+  elements.inspectorCopyStatus.textContent = message;
+  state.copyTimer = window.setTimeout(() => {
+    elements.inspectorCopyStatus.textContent = "";
+  }, 2500);
+}
+
 function downloadBlob(contents, filename, type) {
   const blob = new Blob([contents], {type});
   const url = URL.createObjectURL(blob);
@@ -1055,6 +1395,12 @@ function downloadBlob(contents, filename, type) {
 
 function renderResult(result) {
   state.result = result;
+  state.selectedAsset = null;
+  state.inspectorOpen = false;
+  state.inspectorTrigger = null;
+  state.lineageController = null;
+  state.lineageDisplayPreference = null;
+  state.qualityFailureOnly = false;
   state.artifactTab = "migration";
   resetWriteback();
   renderDecision(result);
@@ -1222,13 +1568,74 @@ elements.reviewTabs.forEach(button => {
 [elements.assetSearch, elements.typeFilter, elements.platformFilter, elements.criticalityFilter]
   .forEach(control => control.addEventListener(control === elements.assetSearch ? "input" : "change", renderAssetList));
 
+elements.failingQualityFilter.addEventListener("click", () => {
+  state.qualityFailureOnly = !state.qualityFailureOnly;
+  renderAssetList();
+  elements.failingQualityFilter.focus({preventScroll: true});
+});
+
 byId("clear-filters").addEventListener("click", () => {
   elements.assetSearch.value = "";
   elements.typeFilter.value = "all";
   elements.platformFilter.value = "all";
   elements.criticalityFilter.value = "all";
+  state.qualityFailureOnly = false;
   renderAssetList();
   elements.assetSearch.focus();
+});
+
+elements.fitLineage.addEventListener("click", () => {
+  state.lineageController?.fit();
+  elements.lineageCanvas.focus({preventScroll: true});
+});
+
+elements.resetLineageSelection.addEventListener("click", () => {
+  state.selectedAsset = null;
+  state.inspectorOpen = false;
+  state.inspectorTrigger = null;
+  state.lineageController?.resetSelection();
+  syncSelectedAssetUI();
+  updateInspectorVisibility();
+  elements.lineageCanvas.focus({preventScroll: true});
+});
+
+elements.toggleLineageList.addEventListener("click", () => {
+  setLineageDisplay(state.lineageDisplay === "graph" ? "list" : "graph", {user: true});
+  const target = state.lineageDisplay === "list"
+    ? (elements.lineageAssetList.querySelector(".is-selected") || elements.lineageAssetList.querySelector("button"))
+    : elements.lineageCanvas;
+  target.focus({preventScroll: true});
+});
+
+elements.closeAssetInspector.addEventListener("click", () => closeAssetInspector());
+elements.assetInspectorBackdrop.addEventListener("click", () => closeAssetInspector());
+elements.assetInspector.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeAssetInspector();
+    return;
+  }
+  if (event.key !== "Tab" || !isInspectorDialogMode()) return;
+  const focusable = [...elements.assetInspector.querySelectorAll(
+    "button:not([disabled]), summary, a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+  )].filter(item => !item.hidden);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+
+window.addEventListener("resize", () => {
+  if (state.lineageDisplayPreference === null && state.result) {
+    setLineageDisplay(prefersLineageList() ? "list" : "graph");
+  }
+  updateInspectorVisibility();
 });
 
 document.querySelectorAll(".artifact-tab").forEach(button => {
@@ -1251,9 +1658,9 @@ byId("copy-urn").addEventListener("click", async () => {
   if (!state.selectedAsset) return;
   try {
     await copyText(state.selectedAsset.urn);
-    announceCopy("DataHub URN copied.");
+    announceInspectorCopy("DataHub URN copied.");
   } catch {
-    announceCopy("The URN could not be copied. Select it manually from the details panel.");
+    announceInspectorCopy("The URN could not be copied. Select it manually from this panel.");
   }
 });
 
@@ -1332,4 +1739,5 @@ elements.applyWriteback.addEventListener("click", async () => {
 loadSample({announce: false});
 updateChangeType();
 setView("empty");
+updateInspectorMode();
 updateConnectionStatus();

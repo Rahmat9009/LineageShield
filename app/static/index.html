@@ -464,55 +464,74 @@
             </div>
           </section>
 
-          <section class="panel content-panel review-panel" id="review-panel-lineage" data-review-view="lineage" role="tabpanel" aria-labelledby="review-tab-lineage" tabindex="-1" hidden>
-            <div class="section-heading">
+          <section class="review-panel evidence-view lineage-view" id="review-panel-lineage" data-review-view="lineage" role="tabpanel" aria-labelledby="review-tab-lineage" tabindex="-1" hidden>
+            <header class="evidence-view-header">
               <div>
                 <span class="section-index">Live lineage evidence</span>
                 <h2 id="lineage-heading">Lineage blast radius</h2>
-                <p>Every node is derived from the provider response. Select one to inspect its metadata.</p>
+                <p>Trace the returned dependency graph, then select an asset to inspect its metadata evidence.</p>
               </div>
-              <div class="lineage-legend" aria-label="Asset type legend">
-                <span><i class="legend-swatch dataset"></i>Dataset</span>
-                <span><i class="legend-swatch pipeline"></i>Pipeline</span>
-                <span><i class="legend-swatch reporting"></i>BI &amp; reporting</span>
-                <span><i class="legend-swatch ml"></i>ML</span>
+              <div class="lineage-toolbar" role="toolbar" aria-label="Lineage display controls">
+                <button class="button button-secondary button-compact" id="fit-lineage" type="button">
+                  <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5" />
+                  </svg>
+                  Fit graph
+                </button>
+                <button class="button button-secondary button-compact" id="reset-lineage-selection" type="button">
+                  Reset selection
+                </button>
+                <button class="button button-secondary button-compact" id="toggle-lineage-list" type="button" aria-pressed="false" aria-controls="lineage-graph-region lineage-asset-list">
+                  View as asset list
+                </button>
               </div>
+            </header>
+
+            <div class="lineage-legend" id="lineage-legend" aria-label="Asset type legend">
+              <span><i class="legend-swatch dataset"></i>Dataset</span>
+              <span><i class="legend-swatch pipeline"></i>Pipeline</span>
+              <span><i class="legend-swatch reporting"></i>BI &amp; reporting</span>
+              <span><i class="legend-swatch ml"></i>ML</span>
+              <span><i class="legend-line"></i>Selected connection</span>
             </div>
 
-            <div class="lineage-layout">
-              <div class="lineage-canvas" id="lineage-canvas" aria-live="polite"></div>
-              <aside class="node-inspector" id="node-inspector" aria-labelledby="node-inspector-title">
-                <span class="inspector-type" id="inspector-type">Source dataset</span>
-                <h3 id="node-inspector-title">Select a lineage node</h3>
-                <p id="inspector-description">Asset metadata will appear here.</p>
-                <dl id="inspector-metadata"></dl>
-                <div class="urn-block is-hidden" id="inspector-urn-block">
-                  <span>Full DataHub URN</span>
-                  <code id="inspector-urn"></code>
-                  <button class="button button-secondary button-compact" id="copy-urn" type="button">Copy URN</button>
-                </div>
-              </aside>
+            <div class="lineage-surface" id="lineage-surface" data-display="graph">
+              <div class="lineage-graph-region" id="lineage-graph-region">
+                <div class="lineage-canvas" id="lineage-canvas" aria-live="polite" tabindex="0"></div>
+              </div>
+              <div class="lineage-asset-list" id="lineage-asset-list" role="listbox" aria-label="Lineage assets" hidden></div>
             </div>
-            <p class="lineage-note" id="lineage-note"></p>
+
+            <dl class="lineage-scope" aria-label="Lineage evidence scope">
+              <div><dt>Evidence path</dt><dd id="lineage-scope-fallback">Provider lineage</dd></div>
+              <div><dt>Downstream assets</dt><dd id="lineage-scope-count">0</dd></div>
+              <div><dt>Hop limit</dt><dd id="lineage-scope-hops">2</dd></div>
+              <div><dt>Display limit</dt><dd id="lineage-scope-limit">60 assets</dd></div>
+            </dl>
+            <details class="lineage-context-note">
+              <summary>Investigation context</summary>
+              <p class="lineage-note" id="lineage-note"></p>
+            </details>
           </section>
 
-          <section class="panel content-panel review-panel" id="review-panel-assets" data-review-view="assets" role="tabpanel" aria-labelledby="review-tab-assets" tabindex="-1" hidden>
-            <div class="section-heading section-heading-inline">
+          <section class="review-panel evidence-view assets-view" id="review-panel-assets" data-review-view="assets" role="tabpanel" aria-labelledby="review-tab-assets" tabindex="-1" hidden>
+            <header class="evidence-view-header">
               <div>
                 <span class="section-index">Affected assets</span>
                 <h2 id="assets-heading">Dependency explorer</h2>
+                <p>Filter the returned blast radius and inspect ownership, quality, and metadata provenance.</p>
               </div>
-              <strong class="result-count" id="asset-count">0 results</strong>
-            </div>
+              <strong class="result-count" id="asset-count" aria-live="polite">0 results</strong>
+            </header>
 
-            <div class="filter-bar" aria-label="Filter affected assets">
+            <div class="asset-toolbar" aria-label="Filter affected assets">
               <div class="search-control">
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="10.5" cy="10.5" r="6.5" />
                   <path d="m16 16 4.5 4.5" />
                 </svg>
                 <label class="visually-hidden" for="asset-search">Search affected assets</label>
-                <input id="asset-search" type="search" placeholder="Search asset or platform" autocomplete="off" />
+                <input id="asset-search" type="search" placeholder="Search asset, platform, owner, or evidence" autocomplete="off" />
               </div>
               <label>
                 <span class="visually-hidden">Asset type</span>
@@ -540,18 +559,106 @@
                   <option value="low">Low</option>
                 </select>
               </label>
-              <button class="button button-secondary button-compact" id="clear-filters" type="button">Clear</button>
+              <button class="button button-secondary button-compact quality-filter" id="failing-quality-filter" type="button" aria-pressed="false">
+                Failing quality <span id="failing-quality-count">0</span>
+              </button>
+              <button class="button button-secondary button-compact" id="clear-filters" type="button">Clear filters</button>
             </div>
 
-            <div class="asset-list-header" aria-hidden="true">
-              <span>Asset</span><span>Platform &amp; type</span><span>Criticality</span>
+            <div class="asset-table" role="group" aria-labelledby="assets-heading">
+              <div class="asset-list-header" aria-hidden="true">
+                <span>Asset</span>
+                <span>Platform / type</span>
+                <span>Dependency evidence</span>
+                <span>Criticality</span>
+                <span>Quality</span>
+                <span>Owner</span>
+              </div>
+              <div class="asset-list" id="assets" role="listbox" aria-label="Affected assets"></div>
             </div>
-            <div class="asset-list" id="assets"></div>
-            <div class="inline-empty is-hidden" id="assets-empty">
-              <strong>No assets match these filters</strong>
-              <span>Clear the filters or try a broader search.</span>
+            <div class="inline-empty is-hidden" id="assets-empty" role="status">
+              <strong>No affected assets match the current filters</strong>
+              <span>Clear filters or broaden the search to return to the full dependency set.</span>
             </div>
           </section>
+
+          <div class="asset-inspector-backdrop" id="asset-inspector-backdrop" hidden></div>
+          <aside class="asset-inspector" id="asset-inspector" aria-labelledby="node-inspector-title" tabindex="-1" hidden>
+            <header class="asset-inspector-header">
+              <div>
+                <span class="inspector-type" id="inspector-type">Selected asset</span>
+                <h2 id="node-inspector-title">Asset metadata</h2>
+                <p id="inspector-platform-type">Platform and type</p>
+              </div>
+              <button class="button button-secondary button-compact inspector-close" id="close-asset-inspector" type="button">
+                <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+                Close
+              </button>
+            </header>
+
+            <div class="asset-inspector-body">
+              <dl class="inspector-evidence" id="inspector-metadata">
+                <div>
+                  <dt>Dependency evidence</dt>
+                  <dd id="inspector-dependency">Select an asset to inspect its dependency path.</dd>
+                </div>
+                <div>
+                  <dt>Criticality</dt>
+                  <dd><strong id="inspector-criticality">Unknown</strong><span id="inspector-criticality-source">Source unavailable</span></dd>
+                </div>
+                <div>
+                  <dt>Quality</dt>
+                  <dd><strong id="inspector-quality">Unknown</strong><span id="inspector-quality-source">Source unavailable</span></dd>
+                </div>
+                <div>
+                  <dt>Usage</dt>
+                  <dd id="inspector-usage">Unavailable · score retained at 0</dd>
+                </div>
+              </dl>
+
+              <section class="inspector-section" aria-labelledby="inspector-owners-heading">
+                <h3 id="inspector-owners-heading">Owners and roles</h3>
+                <ul class="inspector-owner-list" id="inspector-owners"></ul>
+              </section>
+
+              <section class="inspector-section" aria-labelledby="inspector-governance-heading">
+                <h3 id="inspector-governance-heading">Tags and glossary terms</h3>
+                <dl class="inspector-compact-list">
+                  <div><dt>Tags</dt><dd id="inspector-tags">Unavailable</dd></div>
+                  <div><dt>Glossary</dt><dd id="inspector-glossary">Unavailable</dd></div>
+                </dl>
+              </section>
+
+              <section class="inspector-section" aria-labelledby="inspector-schema-heading">
+                <h3 id="inspector-schema-heading">Schema fields</h3>
+                <p class="inspector-schema-summary" id="inspector-fields">Unavailable</p>
+              </section>
+
+              <section class="inspector-section" aria-labelledby="inspector-properties-heading">
+                <h3 id="inspector-properties-heading">Structured properties</h3>
+                <dl class="inspector-property-list" id="inspector-properties"></dl>
+              </section>
+
+              <section class="inspector-section inspector-description-section" aria-labelledby="inspector-description-heading">
+                <h3 id="inspector-description-heading">Description</h3>
+                <p id="inspector-description">No description is available.</p>
+                <p class="inspector-description-note is-hidden" id="inspector-description-note"></p>
+                <details id="inspector-full-description">
+                  <summary>Full description</summary>
+                  <div id="inspector-description-full"></div>
+                </details>
+              </section>
+
+              <div class="urn-block" id="inspector-urn-block">
+                <span>Full DataHub URN</span>
+                <code id="inspector-urn"></code>
+                <button class="button button-secondary button-compact" id="copy-urn" type="button">Copy URN</button>
+                <span class="inspector-copy-status" id="inspector-copy-status" aria-live="polite"></span>
+              </div>
+            </div>
+          </aside>
 
           <section class="panel content-panel review-panel" id="review-panel-risk" data-review-view="risk" role="tabpanel" aria-labelledby="review-tab-risk" tabindex="-1" hidden>
             <div class="section-heading">
