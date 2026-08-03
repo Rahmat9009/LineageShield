@@ -1,7 +1,5 @@
 # Manual screenshot checklist
 
-No screenshots are committed yet. Capture these PNGs manually from the live Order Details analysis. Use a desktop browser around 1440×900, keep text at 100% zoom unless noted, hide bookmarks and personal browser chrome, and never expose `.env`, tokens, terminal history, or unrelated DataHub records.
-
 ## 1. `01-change-proposal.png`
 
 Show the full proposal card with the exact Snowflake root URN, `ORDER_ID`, rename operation, `PURCHASE_ID`, and rationale. Include the header's **Live DataHub connected** status. Frame the form and status together; the Run button should be visible.
