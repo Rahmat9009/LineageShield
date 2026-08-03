@@ -23,7 +23,7 @@ Live mode uses `DataHubClient.from_env()` to:
 
 Direct metadata can include display name, platform, description, schema fields, owners, tags, glossary terms, structured properties, and identifiable quality test results. Every asset marks values as `datahub`, `lineage`, `inferred`, `fallback`, `unavailable`, or `demo`; inferred criticality is never represented as stored DataHub metadata.
 
-The provider is read-only. LineageShield does not mutate DataHub, create pull requests, or execute generated SQL.
+Normal analysis remains read-only. An optional, disabled-by-default write-back flow can record a reviewed result on the root dataset only after a separate preview and explicit confirmation. LineageShield never creates pull requests or executes generated SQL.
 
 ## Architecture
 
@@ -31,12 +31,17 @@ The provider is read-only. LineageShield does not mutate DataHub, create pull re
 Browser (vanilla HTML/CSS/JS)
         │
         ▼
-FastAPI routes ──► ChangeImpactService
-                        ├── ContextProvider
-                        │     ├── DataHubContextProvider (live)
-                        │     └── DemoContextProvider (offline fallback)
-                        ├── RiskEngine (deterministic)
-                        └── ArtifactGenerator (review templates)
+FastAPI routes
+  ├── /api/analyze ──► ChangeImpactService
+  │                       ├── ContextProvider
+  │                       │     ├── DataHubContextProvider (live)
+  │                       │     └── DemoContextProvider (offline fallback)
+  │                       ├── RiskEngine (deterministic)
+  │                       └── ArtifactGenerator (review templates)
+  │                              │
+  │                              └──► AnalysisStore (bounded snapshot)
+  └── /api/writeback/* ──► AnalysisStore ──► DataHubWritebackService
+                                                 └── description JSON Patch
 ```
 
 The frontend has no build step or paid visualization dependency. Its SVG lineage view is generated only from API-returned assets and edges, with the affected-assets explorer as the accessible list alternative.
@@ -74,6 +79,9 @@ CONTEXT_PROVIDER=datahub
 DATAHUB_GMS_URL=http://localhost:8080
 DATAHUB_GMS_TOKEN=
 DATAHUB_MUTATIONS_ENABLED=false
+DATAHUB_MUTATION_TIMEOUT_SECONDS=12
+ANALYSIS_STORE_TTL_SECONDS=1800
+ANALYSIS_STORE_MAX_ENTRIES=100
 DATAHUB_HEALTH_TIMEOUT_SECONDS=6
 DATAHUB_LINEAGE_TIMEOUT_SECONDS=30
 DATAHUB_ENRICHMENT_TIMEOUT_SECONDS=20
@@ -109,6 +117,7 @@ Demo flow for judges:
 5. Expand the deterministic risk evidence and show the score composition.
 6. Review Migration, Compatibility, Tests, Rollback, and PR Summary.
 7. Export the complete JSON report.
+8. Open **Record in DataHub**, preview the exact patch, and show that Apply is disabled by default.
 
 ## Current capabilities
 
@@ -133,6 +142,41 @@ Demo flow for judges:
 - Generated migration SQL, compatibility SQL, schema tests, rollback steps, and PR summary
 - Copy actions, individual artifact downloads, and full JSON export
 - Structured provider health and analysis errors without browser alerts
+- A two-step, root-only DataHub write-back with an exact preview, explicit confirmation, read-back receipt, and idempotent repeat behavior
+
+## Safe DataHub write-back
+
+Write-back uses one JSON Patch operation on the reviewed root dataset's `editableDatasetProperties.description` field. LineageShield first reads the effective description, preserves it byte-for-byte, and appends or replaces only the matching, clearly delimited block:
+
+```text
+<!-- LINEAGESHIELD:BEGIN <analysis-id> -->
+...
+<!-- LINEAGESHIELD:END <analysis-id> -->
+```
+
+The block records the analysis ID and UTC analysis timestamp, proposed change and affected column, optional new value, merge decision, deterministic risk score and level, affected asset count, real required-approval labels, concise evidence, migration and rollback summaries, and an explicit statement that no migration was executed. It does not change downstream assets, owners, tags, terms, quality signals, structured properties, or warehouse data.
+
+The workflow is deliberately two-step:
+
+1. `POST /api/writeback/preview` accepts only a completed `analysis_id`, reads the current description, and returns the exact managed section and complete resulting description. It never mutates DataHub and works while mutations are disabled.
+2. `POST /api/writeback/apply` accepts the same `analysis_id` plus the exact confirmation value `RECORD_IN_DATAHUB`. It rejects disabled mode, missing confirmation, and unknown or expired analyses. All decision data comes from the server-side snapshot, never browser-supplied scores or decisions.
+
+To enable Apply for a deliberate test, change only the local process configuration and restart:
+
+```powershell
+$env:DATAHUB_MUTATIONS_ENABLED = "true"
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Stop that process and remove the temporary session variable to return to the safe default:
+
+```powershell
+Remove-Item Env:DATAHUB_MUTATIONS_ENABLED
+```
+
+Do not set the tracked example files to `true`, and do not commit `.env`. Repeating Apply for the same analysis re-reads DataHub and returns `already_applied` without sending another patch when the managed section already matches.
+
+To remove a test record, open the root asset's Documentation editor in DataHub, delete the exact block from its `LINEAGESHIELD:BEGIN <analysis-id>` marker through its matching `END` marker, and save without changing the surrounding text. To replace it, remove that block and apply a newly completed investigation. If your DataHub version offers a **Revert edit** action and the asset originally used ingestion-owned documentation, use that action only when you intend to remove the entire editable description override.
 
 ## Enrichment performance and resilience
 
@@ -184,6 +228,24 @@ Content-Type: application/json
 
 Existing endpoints remain available, including `GET /api/demo-context`.
 
+Preview a stored completed analysis without mutating:
+
+```http
+POST /api/writeback/preview
+Content-Type: application/json
+
+{"analysis_id": "<analysis-id>"}
+```
+
+Apply the server-stored record after explicit confirmation:
+
+```http
+POST /api/writeback/apply
+Content-Type: application/json
+
+{"analysis_id": "<analysis-id>", "confirmation": "RECORD_IN_DATAHUB"}
+```
+
 ## Testing
 
 Automated tests use mocked or bundled providers and do not require DataHub:
@@ -192,7 +254,7 @@ Automated tests use mocked or bundled providers and do not require DataHub:
 python -m pytest -q
 ```
 
-The suite covers risk thresholds, a large downstream blast radius, lineage fallback and duplicate removal, root and downstream enrichment, reference normalization and deduplication, partial failures and timeouts, metadata provenance, approval owners, readable URN fallbacks, and mocked FastAPI endpoints. It does not require a running DataHub server.
+The suite covers risk thresholds, a large downstream blast radius, lineage fallback and duplicate removal, root and downstream enrichment, reference normalization and deduplication, partial failures and timeouts, metadata provenance, approval owners, readable URN fallbacks, analysis-store bounds and expiry, preview/apply safety, tamper rejection, description preservation, idempotency, and mocked FastAPI endpoints. It does not require a running DataHub server.
 
 Import check:
 
@@ -210,15 +272,19 @@ python -c "import app.main; print('LineageShield import OK')"
 - Reference names depend on the typed bulk OpenAPI endpoint. If a referenced user, group, ownership type, tag, or term cannot be resolved, the API keeps its full URN and supplies a readable URN fallback label.
 - The installed DataHub v2 SDK reports its entity API as experimental. LineageShield isolates SDK failures and falls back safely, but future SDK upgrades should be regression-tested.
 - Application timeouts stop waiting for synchronous SDK work; Python cannot forcibly terminate an already-running `to_thread` HTTP call, which may finish in the background.
+- Completed-analysis storage is process-local, capped at 100 entries, and expires records after 30 minutes by default. It is lost on restart and is not suitable for multiple workers, durable audit, or production coordination.
+- Preview and Apply each read the current effective description. Applying creates or updates DataHub's editable description layer; on assets whose visible description came only from ingestion, this can intentionally shadow later ingestion-owned description updates until the editable override is reverted.
+- The installed `acryl-datahub` client is `1.6.0.6`; the verified local server is `v1.5.0.6` and advertises patch support. This SDK has no description-specific public patch builder, so the mutation adapter uses its generic `MetadataPatchProposal` scalar patch surface and is covered by a shape test. Regression-test this adapter on SDK upgrades.
+- A timeout or transport error after patch submission has an honestly reported `unknown` mutation state. Inspect the root asset before retrying. The single-aspect design avoids multi-operation partial success but cannot prove whether an interrupted remote request committed.
 - Generated safeguards are review templates. LineageShield does not execute SQL or write to GitHub.
-- No DataHub write-back, authentication, billing, or multi-user state is included.
+- No authentication, billing, GitHub PR creation, downstream mutation, or multi-user durable state is included.
 
 ## Repository map
 
 ```text
 app/
   context/       DataHub and demo context providers
-  services/      Risk scoring, orchestration, artifact generation
+  services/      Risk scoring, orchestration, artifact generation, analysis store, write-back
   static/        Enterprise review console and SVG lineage renderer
   data/          Bundled offline demo graph
 tests/           Unit and FastAPI tests

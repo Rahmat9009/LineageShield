@@ -54,6 +54,7 @@ async function requestJson(path, options = {}) {
     if (!response.ok) {
       const message = validationMessage(body?.detail)
         || (typeof body?.detail === "string" ? body.detail : "")
+        || (typeof body?.detail?.message === "string" ? body.detail.message : "")
         || `Request failed with status ${response.status}.`;
       throw new ApiError(message, {status: response.status, detail: body?.detail});
     }
@@ -79,5 +80,24 @@ export function analyzeChange(payload) {
     method: "POST",
     body: JSON.stringify(payload),
     timeoutMs: 45_000
+  });
+}
+
+export function previewWriteback(analysisId) {
+  return requestJson("/api/writeback/preview", {
+    method: "POST",
+    body: JSON.stringify({analysis_id: analysisId}),
+    timeoutMs: 20_000
+  });
+}
+
+export function applyWriteback(analysisId) {
+  return requestJson("/api/writeback/apply", {
+    method: "POST",
+    body: JSON.stringify({
+      analysis_id: analysisId,
+      confirmation: "RECORD_IN_DATAHUB"
+    }),
+    timeoutMs: 30_000
   });
 }

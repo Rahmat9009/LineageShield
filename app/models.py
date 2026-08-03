@@ -1,6 +1,7 @@
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 ChangeType = Literal["rename", "drop", "type_change", "add"]
@@ -153,3 +154,73 @@ class AnalysisResult(BaseModel):
     glossary_terms: list[str] = Field(default_factory=list)
     metadata_summary: MetadataSummary = Field(default_factory=MetadataSummary)
     context_notes: list[str] = Field(default_factory=list)
+
+
+class WritebackTarget(BaseModel):
+    urn: str
+    name: str
+    platform: str
+
+
+class ProposedChangeRecord(BaseModel):
+    change_type: ChangeType
+    column: str
+    new_value: str | None = None
+    reason: str = ""
+
+
+class WritebackRecord(BaseModel):
+    analysis_id: str
+    analysis_timestamp: datetime
+    root_asset: WritebackTarget
+    proposed_change: ProposedChangeRecord
+    decision: Decision
+    risk_score: int = Field(ge=0, le=100)
+    risk_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    affected_asset_count: int = Field(ge=0)
+    required_approvals: list[str] = Field(default_factory=list)
+    rationale: str
+    evidence_summary: list[str] = Field(default_factory=list)
+    migration_summary: str
+    rollback_summary: str
+    no_migration_executed: Literal[True] = True
+
+
+class WritebackPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    analysis_id: str = Field(min_length=1, max_length=100)
+
+
+class WritebackApplyRequest(WritebackPreviewRequest):
+    confirmation: Literal["RECORD_IN_DATAHUB"]
+
+
+class DataHubMutationPreview(BaseModel):
+    operation: Literal["patch_editable_description"] = "patch_editable_description"
+    aspect: Literal["editableDatasetProperties"] = "editableDatasetProperties"
+    field: Literal["description"] = "description"
+    managed_section: str
+    resulting_description: str
+    already_applied: bool = False
+    preserves_existing_description: Literal[True] = True
+
+
+class WritebackPreview(BaseModel):
+    mutations_enabled: bool
+    expires_at: datetime
+    record: WritebackRecord
+    mutation: DataHubMutationPreview
+    warnings: list[str] = Field(default_factory=list)
+
+
+class WritebackReceipt(BaseModel):
+    analysis_id: str
+    asset: WritebackTarget
+    operation: Literal["patch_editable_description"] = "patch_editable_description"
+    aspect: Literal["editableDatasetProperties"] = "editableDatasetProperties"
+    applied_at: datetime
+    status: Literal["applied", "already_applied"]
+    idempotent: bool
+    mutation_state: Literal["confirmed"] = "confirmed"
+    message: str

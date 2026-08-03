@@ -63,6 +63,8 @@ def test_health_endpoint_uses_provider_healthcheck(monkeypatch):
         "provider": "mock-datahub",
         "connected": True,
         "detail": "Mock live context is ready.",
+        "mutations_enabled": False,
+        "writeback_scope": "root-dataset-description",
     }
 
 

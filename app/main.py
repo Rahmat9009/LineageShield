@@ -9,15 +9,32 @@ from app.config import get_settings
 from app.context.base import ProviderUnavailableError
 from app.context.datahub_provider import DataHubContextProvider
 from app.context.demo_provider import DemoContextProvider
-from app.models import AnalysisResult, ChangeRequest
+from app.models import (
+    AnalysisResult,
+    ChangeRequest,
+    WritebackApplyRequest,
+    WritebackPreview,
+    WritebackPreviewRequest,
+    WritebackReceipt,
+)
+from app.services.analysis_store import (
+    AnalysisExpiredError,
+    AnalysisNotFoundError,
+    AnalysisStore,
+    StoredAnalysis,
+)
 from app.services.change_impact import ChangeImpactService
+from app.services.datahub_writeback import (
+    DataHubWritebackService,
+    WritebackServiceError,
+)
 
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 app = FastAPI(
     title="LineageShield API",
-    version="0.2.0",
+    version="0.3.0",
     description="Metadata-aware schema-change impact analysis.",
 )
 
@@ -42,6 +59,14 @@ def build_service() -> ChangeImpactService:
 
 
 service = build_service()
+analysis_store = AnalysisStore(
+    ttl_seconds=settings.analysis_store_ttl_seconds,
+    max_entries=settings.analysis_store_max_entries,
+)
+writeback_service = DataHubWritebackService(
+    enabled=settings.datahub_mutations_enabled,
+    timeout_seconds=settings.datahub_mutation_timeout_seconds,
+)
 
 
 @app.get("/", include_in_schema=False)
@@ -68,6 +93,8 @@ async def health() -> dict[str, str | bool]:
         "provider": service.provider.name,
         "connected": connected,
         "detail": detail,
+        "mutations_enabled": writeback_service.enabled,
+        "writeback_scope": "root-dataset-description",
     }
 
 
@@ -87,7 +114,9 @@ async def demo_context() -> dict:
 @app.post("/api/analyze", response_model=AnalysisResult)
 async def analyze(request: ChangeRequest) -> AnalysisResult:
     try:
-        return await service.analyze(request)
+        result = await service.analyze(request)
+        analysis_store.put(request, result)
+        return result
     except ProviderUnavailableError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
@@ -99,4 +128,47 @@ async def analyze(request: ChangeRequest) -> AnalysisResult:
         raise HTTPException(
             status_code=500,
             detail="The investigation failed unexpectedly. Review server logs and retry.",
+        ) from exc
+
+
+@app.post("/api/writeback/preview", response_model=WritebackPreview)
+async def preview_writeback(request: WritebackPreviewRequest) -> WritebackPreview:
+    analysis = _stored_analysis(request.analysis_id)
+    try:
+        return await writeback_service.preview(analysis)
+    except WritebackServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.as_detail()) from exc
+
+
+@app.post("/api/writeback/apply", response_model=WritebackReceipt)
+async def apply_writeback(request: WritebackApplyRequest) -> WritebackReceipt:
+    analysis = _stored_analysis(request.analysis_id)
+    try:
+        return await writeback_service.apply(analysis)
+    except WritebackServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.as_detail()) from exc
+
+
+def _stored_analysis(analysis_id: str) -> StoredAnalysis:
+    try:
+        return analysis_store.get(analysis_id)
+    except AnalysisExpiredError as exc:
+        raise HTTPException(
+            status_code=410,
+            detail={
+                "code": "analysis_expired",
+                "message": str(exc),
+                "mutation_state": "not_started",
+                "retryable": False,
+            },
+        ) from exc
+    except AnalysisNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "analysis_not_found",
+                "message": str(exc),
+                "mutation_state": "not_started",
+                "retryable": False,
+            },
         ) from exc

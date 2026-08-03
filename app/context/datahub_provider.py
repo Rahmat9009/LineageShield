@@ -66,7 +66,7 @@ class DataHubContextProvider(ContextProvider):
             )
             return False, "Connection failed; verify DataHub is running and configured."
 
-        return True, "Read-only live lineage provider is ready."
+        return True, "Live lineage provider is ready; analysis remains read-only."
 
     async def build_context(self, request: ChangeRequest) -> ContextGraph:
         try:

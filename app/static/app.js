@@ -1,4 +1,4 @@
-import {analyzeChange, getHealth} from "./api.js";
+import {analyzeChange, applyWriteback, getHealth, previewWriteback} from "./api.js";
 import {assetGroup, assetTypeLabel, renderLineage} from "./lineage.js";
 
 const SAMPLE_SCENARIO = {
@@ -120,7 +120,29 @@ const elements = {
   artifactPanel: byId("artifact-panel"),
   artifactFilename: byId("artifact-filename"),
   artifactCode: byId("artifact-code").querySelector("code"),
-  copyStatus: byId("copy-status")
+  copyStatus: byId("copy-status"),
+  writebackStatus: byId("writeback-status"),
+  writebackAvailability: byId("writeback-availability"),
+  previewWriteback: byId("preview-writeback"),
+  writebackFeedback: byId("writeback-feedback"),
+  writebackPreview: byId("writeback-preview"),
+  writebackTarget: byId("writeback-target"),
+  writebackTargetUrn: byId("writeback-target-urn"),
+  writebackDecision: byId("writeback-decision"),
+  writebackRisk: byId("writeback-risk"),
+  writebackIdempotency: byId("writeback-idempotency"),
+  writebackManagedSection: byId("writeback-managed-section"),
+  writebackResultingDescription: byId("writeback-resulting-description"),
+  writebackWarnings: byId("writeback-warnings"),
+  writebackConfirm: byId("writeback-confirm"),
+  applyWriteback: byId("apply-writeback"),
+  writebackReceipt: byId("writeback-receipt"),
+  receiptTitle: byId("receipt-title"),
+  receiptAnalysis: byId("receipt-analysis"),
+  receiptAsset: byId("receipt-asset"),
+  receiptOperation: byId("receipt-operation"),
+  receiptTime: byId("receipt-time"),
+  receiptMessage: byId("receipt-message")
 };
 
 const state = {
@@ -128,6 +150,10 @@ const state = {
   lastPayload: null,
   selectedAsset: null,
   artifactTab: "migration",
+  provider: null,
+  mutationsEnabled: false,
+  writebackPreview: null,
+  writebackOutcomeUnknown: false,
   progressTimers: [],
   copyTimer: null
 };
@@ -254,6 +280,8 @@ async function updateConnectionStatus() {
     const health = await getHealth();
     const provider = health.provider || health.context_provider || "unknown";
     const connected = health.connected !== false && health.status === "ok";
+    state.provider = provider;
+    state.mutationsEnabled = health.mutations_enabled === true;
     elements.providerLabel.textContent = provider;
     elements.systemState.dataset.state = connected ? "connected" : "unavailable";
 
@@ -267,12 +295,16 @@ async function updateConnectionStatus() {
       elements.connectionDetail.textContent = health.detail || "Analysis is not using live DataHub metadata";
     }
     elements.retryHealth.classList.toggle("is-hidden", connected);
+    renderWritebackAvailability();
   } catch (error) {
     elements.systemState.dataset.state = "unavailable";
     elements.connectionLabel.textContent = "Backend unavailable";
     elements.connectionDetail.textContent = error.message;
     elements.providerLabel.textContent = "offline";
     elements.retryHealth.classList.remove("is-hidden");
+    state.provider = null;
+    state.mutationsEnabled = false;
+    renderWritebackAvailability({connectionFailed: true});
   }
 }
 
@@ -700,12 +732,107 @@ function downloadBlob(contents, filename, type) {
 function renderResult(result) {
   state.result = result;
   state.artifactTab = "migration";
+  resetWriteback();
   renderDecision(result);
   renderLineageSection(result);
   populatePlatformFilter(result.affected_assets);
   renderAssetList();
   renderRisk(result);
   selectArtifactTab(byId("tab-migration"));
+}
+
+function renderWritebackAvailability({connectionFailed = false} = {}) {
+  const provider = state.result?.provider || state.provider;
+  const datahubAnalysis = provider === "datahub";
+  let status = "disabled";
+  let label = "Mutations disabled";
+  let message = "Preview is available for live DataHub analyses; applying requires DATAHUB_MUTATIONS_ENABLED=true.";
+
+  if (connectionFailed) {
+    status = "unavailable";
+    label = "Configuration unavailable";
+    message = "Reconnect to the backend before previewing a DataHub record.";
+  } else if (!datahubAnalysis) {
+    status = "unsupported";
+    label = "Live DataHub required";
+    message = "Complete this investigation with the live DataHub provider to create a write-back preview.";
+  } else if (state.mutationsEnabled) {
+    status = "enabled";
+    label = "Mutations enabled";
+    message = "Preview is read-only. Apply remains locked until the exact patch is reviewed and confirmed.";
+  }
+
+  elements.writebackStatus.dataset.state = status;
+  elements.writebackStatus.textContent = label;
+  elements.writebackAvailability.textContent = message;
+  elements.previewWriteback.disabled = !state.result || !datahubAnalysis || connectionFailed;
+  updateApplyAvailability();
+}
+
+function resetWriteback() {
+  state.writebackPreview = null;
+  state.writebackOutcomeUnknown = false;
+  elements.writebackConfirm.checked = false;
+  elements.writebackPreview.classList.add("is-hidden");
+  elements.writebackReceipt.classList.add("is-hidden");
+  elements.writebackFeedback.classList.add("is-hidden");
+  elements.writebackFeedback.textContent = "";
+  elements.previewWriteback.disabled = false;
+  elements.previewWriteback.textContent = "Preview DataHub record";
+  renderWritebackAvailability();
+}
+
+function setWritebackFeedback(message, stateName = "info") {
+  elements.writebackFeedback.textContent = message;
+  elements.writebackFeedback.dataset.state = stateName;
+  elements.writebackFeedback.setAttribute("role", stateName === "error" ? "alert" : "status");
+  elements.writebackFeedback.classList.toggle("is-hidden", !message);
+}
+
+function updateApplyAvailability() {
+  elements.applyWriteback.disabled = !state.writebackPreview
+    || !state.mutationsEnabled
+    || state.writebackOutcomeUnknown
+    || !elements.writebackConfirm.checked;
+}
+
+function renderWritebackPreview(preview) {
+  state.writebackPreview = preview;
+  state.writebackOutcomeUnknown = false;
+  state.mutationsEnabled = preview.mutations_enabled === true;
+  const {record, mutation} = preview;
+  elements.writebackTarget.textContent = record.root_asset.name || "Unnamed asset";
+  elements.writebackTargetUrn.textContent = record.root_asset.urn;
+  elements.writebackDecision.textContent = record.decision;
+  elements.writebackRisk.textContent = `${record.risk_score}/100 · ${record.risk_level}`;
+  elements.writebackIdempotency.textContent = mutation.already_applied
+    ? "Already present · no-op on apply"
+    : "New managed record";
+  elements.writebackManagedSection.textContent = mutation.managed_section;
+  elements.writebackResultingDescription.textContent = mutation.resulting_description;
+  elements.writebackWarnings.replaceChildren(...(preview.warnings || []).map(warning => {
+    const item = document.createElement("li");
+    item.textContent = warning;
+    return item;
+  }));
+  elements.writebackConfirm.checked = false;
+  elements.writebackPreview.classList.remove("is-hidden");
+  elements.writebackReceipt.classList.add("is-hidden");
+  renderWritebackAvailability();
+  updateApplyAvailability();
+}
+
+function renderWritebackReceipt(receipt) {
+  elements.receiptTitle.textContent = receipt.status === "already_applied"
+    ? "Record already confirmed"
+    : "Record confirmed";
+  elements.receiptAnalysis.textContent = receipt.analysis_id;
+  elements.receiptAsset.textContent = `${receipt.asset.name} · ${receipt.asset.urn}`;
+  elements.receiptOperation.textContent = "Patched editable dataset description";
+  elements.receiptTime.textContent = new Date(receipt.applied_at).toLocaleString();
+  elements.receiptMessage.textContent = receipt.message;
+  elements.writebackPreview.classList.add("is-hidden");
+  elements.writebackReceipt.classList.remove("is-hidden");
 }
 
 elements.form.addEventListener("submit", event => {
@@ -792,6 +919,53 @@ byId("download-json").addEventListener("click", () => {
     `lineageshield-${state.result.analysis_id}.json`,
     "application/json;charset=utf-8"
   );
+});
+
+elements.previewWriteback.addEventListener("click", async () => {
+  if (!state.result) return;
+  elements.previewWriteback.disabled = true;
+  elements.previewWriteback.textContent = "Loading preview…";
+  setWritebackFeedback("Reading the current root documentation. No mutation is being performed.");
+  try {
+    const preview = await previewWriteback(state.result.analysis_id);
+    renderWritebackPreview(preview);
+    setWritebackFeedback(
+      preview.mutation.already_applied
+        ? "This exact analysis record is already present. Apply will be an idempotent no-op."
+        : "Preview ready. Review the exact managed section before confirming."
+    );
+  } catch (error) {
+    setWritebackFeedback(error.message, "error");
+  } finally {
+    elements.previewWriteback.textContent = "Preview DataHub record";
+    renderWritebackAvailability();
+  }
+});
+
+elements.writebackConfirm.addEventListener("change", updateApplyAvailability);
+
+elements.applyWriteback.addEventListener("click", async () => {
+  if (!state.result || !elements.writebackConfirm.checked) return;
+  elements.applyWriteback.disabled = true;
+  elements.applyWriteback.textContent = "Applying metadata patch…";
+  setWritebackFeedback("Patching the reviewed root asset only. No migration SQL is being executed.");
+  try {
+    const receipt = await applyWriteback(state.result.analysis_id);
+    renderWritebackReceipt(receipt);
+    setWritebackFeedback("");
+  } catch (error) {
+    const unknownOutcome = error.detail?.mutation_state === "unknown";
+    state.writebackOutcomeUnknown = unknownOutcome;
+    setWritebackFeedback(
+      unknownOutcome
+        ? `${error.message} Do not retry until you inspect the root asset in DataHub.`
+        : error.message,
+      "error"
+    );
+  } finally {
+    elements.applyWriteback.textContent = "Apply to root asset";
+    updateApplyAvailability();
+  }
 });
 
 loadSample({announce: false});

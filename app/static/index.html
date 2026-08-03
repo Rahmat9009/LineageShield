@@ -423,6 +423,82 @@
             </div>
             <p class="copy-status" id="copy-status" aria-live="polite"></p>
           </section>
+
+          <section class="panel content-panel writeback-panel" aria-labelledby="writeback-heading">
+            <div class="section-heading section-heading-inline">
+              <div>
+                <span class="section-index">05 · CONTROLLED WRITE-BACK</span>
+                <h2 id="writeback-heading">Record in DataHub</h2>
+                <p>Preview a root-asset documentation patch, then confirm it separately. Analysis and preview never mutate DataHub.</p>
+              </div>
+              <span class="writeback-status" id="writeback-status" data-state="checking">Checking configuration</span>
+            </div>
+
+            <div class="writeback-intro" id="writeback-intro">
+              <div>
+                <strong>Review metadata only</strong>
+                <p id="writeback-availability">Write-back availability will appear after the provider check.</p>
+              </div>
+              <button class="button button-secondary" id="preview-writeback" type="button">
+                Preview DataHub record
+              </button>
+            </div>
+
+            <div class="writeback-feedback is-hidden" id="writeback-feedback" role="status" aria-live="polite"></div>
+
+            <div class="writeback-preview is-hidden" id="writeback-preview">
+              <div class="writeback-summary-grid">
+                <div><span>Root asset</span><strong id="writeback-target">—</strong><small id="writeback-target-urn"></small></div>
+                <div><span>Operation</span><strong>Patch editable description</strong></div>
+                <div><span>Decision</span><strong id="writeback-decision">—</strong></div>
+                <div><span>Risk</span><strong id="writeback-risk">—</strong></div>
+              </div>
+
+              <div class="mutation-code">
+                <div class="mutation-code-header">
+                  <span><strong>editableDatasetProperties.description</strong> · managed section</span>
+                  <span id="writeback-idempotency">New record</span>
+                </div>
+                <pre tabindex="0"><code id="writeback-managed-section"></code></pre>
+              </div>
+
+              <details class="resulting-description">
+                <summary>Inspect the complete resulting description</summary>
+                <pre tabindex="0"><code id="writeback-resulting-description"></code></pre>
+              </details>
+
+              <ul class="writeback-warnings" id="writeback-warnings"></ul>
+
+              <div class="writeback-confirmation">
+                <label for="writeback-confirm">
+                  <input id="writeback-confirm" type="checkbox" />
+                  <span>I reviewed this exact metadata patch and understand that it records the investigation only; it does not execute migration SQL.</span>
+                </label>
+                <button class="button button-primary" id="apply-writeback" type="button" disabled>
+                  Apply to root asset
+                </button>
+              </div>
+            </div>
+
+            <div class="writeback-receipt is-hidden" id="writeback-receipt" role="status" aria-live="polite">
+              <div class="receipt-mark" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <path d="m5 12 4 4L19 6" />
+                </svg>
+              </div>
+              <div>
+                <span>DATAHUB RECEIPT</span>
+                <h3 id="receipt-title">Record confirmed</h3>
+                <dl>
+                  <dt>Analysis</dt><dd id="receipt-analysis">—</dd>
+                  <dt>Asset</dt><dd id="receipt-asset">—</dd>
+                  <dt>Operation</dt><dd id="receipt-operation">—</dd>
+                  <dt>Time</dt><dd id="receipt-time">—</dd>
+                </dl>
+                <p id="receipt-message"></p>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
     </div>
@@ -430,7 +506,7 @@
 
   <footer class="app-footer">
     <span>LineageShield</span>
-    <span>Read-only analysis · No DataHub mutations</span>
+    <span>Analysis stays read-only · Write-back requires preview and confirmation</span>
   </footer>
 
   <script type="module" src="/static/app.js"></script>

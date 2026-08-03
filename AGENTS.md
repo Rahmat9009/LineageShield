@@ -8,12 +8,12 @@ LineageShield reviews a proposed schema change against live downstream DataHub l
 
 - `app/main.py`: FastAPI routes, static hosting, provider health, and structured API errors.
 - `app/context/`: provider interface, live DataHub provider, pure metadata normalization helpers, and bundled demo fallback.
-- `app/services/`: orchestration, deterministic risk scoring, and safeguard generation.
+- `app/services/`: orchestration, deterministic risk scoring, safeguard generation, bounded analysis snapshots, and the isolated DataHub mutation service.
 - `app/models.py`: validated API and context models.
 - `app/static/`: vanilla HTML/CSS/JavaScript console. Keep it build-free unless a rewrite has a clear technical justification.
 - `tests/`: isolated unit and API tests; they must not require live DataHub.
 
-Keep DataHub calls in providers, scoring in services, and presentation in the frontend.
+Keep DataHub reads in providers, scoring in services, the explicit mutation path in `datahub_writeback.py`, and presentation in the frontend.
 
 ## Windows commands
 
@@ -45,13 +45,23 @@ python -c "import app.main; print('import ok')"
 - Preserve column-level downstream lineage with entity-level lineage fallback.
 - Preserve typed batch enrichment through the underlying `DataHubGraph.get_entities()` surface, with bounded single-entity SDK fallback.
 - Keep metadata requests bounded (default concurrency 4, batch size 50, six-second request timeout, 20-second total enrichment timeout).
-- Analysis is read-only. Do not enable mutations or change the user's DataHub/Docker installation.
+- Analysis and preview are always read-only. Keep `DATAHUB_MUTATIONS_ENABLED=false` by default and never mutate outside the explicit confirmed Apply route.
+- Write-back is restricted to a scalar patch of the reviewed root dataset's `editableDatasetProperties.description`; preserve surrounding documentation and do not mutate downstream assets.
 
 ## Never commit
 
 - `.env`, access tokens, credentials, or secret-bearing logs
 - virtual environments (`.venv/`, `.datahub-venv/`)
 - editor caches, Python caches, or local test artifacts
+
+## Write-back workflow
+
+- Preview with `POST /api/writeback/preview` and `{"analysis_id": "..."}`. Preview reads the current root documentation and must perform zero mutations.
+- Apply with `POST /api/writeback/apply` and `{"analysis_id": "...", "confirmation": "RECORD_IN_DATAHUB"}`. The route must use only the stored snapshot.
+- Keep `DATAHUB_MUTATIONS_ENABLED=false` in tracked examples. For a deliberate local test, set `$env:DATAHUB_MUTATIONS_ENABLED="true"`, start one app process, perform the confirmed write, stop it, then run `Remove-Item Env:DATAHUB_MUTATIONS_ENABLED`.
+- The written block contains the analysis ID/timestamp, proposed change, decision, score/level, affected count, approvals, deterministic evidence, migration/rollback summaries, and the no-execution statement.
+- Remove a test record in DataHub's Documentation editor by deleting only its matching `LINEAGESHIELD:BEGIN <analysis-id>` through `END` block. Use DataHub's editable-description revert control only when the entire override should be removed.
+- Apply re-reads and verifies the description. A timeout after submission is an `unknown` outcome; inspect DataHub before retrying.
 
 ## Guardrails
 
@@ -66,6 +76,8 @@ python -c "import app.main; print('import ok')"
 - Keep the live provider and `DataHubClient.from_env()` integration.
 - Escape or use `textContent` for API/user strings; do not insert unsanitized HTML.
 - Keep automated tests independent of live DataHub.
+- Never trust write-back record fields from the browser. Resolve the `analysis_id` through the bounded server-side store and require `RECORD_IN_DATAHUB` confirmation.
+- Keep managed documentation delimited by analysis-specific `LINEAGESHIELD:BEGIN` and `LINEAGESHIELD:END` comments. Repeating the same record must remain idempotent.
 
 ## Current limitations
 
@@ -77,4 +89,7 @@ python -c "import app.main; print('import ok')"
 - The DataHub v2 entity SDK is experimental; the bulk path is on the underlying graph client and the public `EntityClient.get()` path is a bounded fallback.
 - Synchronous SDK calls run in worker threads. Application timeouts stop awaiting them but cannot terminate an in-flight HTTP call.
 - Safeguards are deterministic templates for review, not executed warehouse or GitHub changes.
-- There is no DataHub write-back, authentication, or multi-user state.
+- The write-back snapshot store is in-memory only (default 30-minute TTL, 100 entries), is lost on restart, and is not safe for multi-worker production deployment.
+- Write-back patches only the editable dataset description. It can shadow later ingestion-owned documentation until that editable override is removed or reverted in DataHub.
+- The installed SDK lacks a description-specific public patch builder. `SdkDataHubMutationGateway` uses the generic `MetadataPatchProposal` scalar patch supported by the verified patch-capable local server; keep its patch-shape regression test.
+- There is no authentication, GitHub PR creation, billing, downstream mutation, or durable multi-user state.
