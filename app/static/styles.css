@@ -4764,7 +4764,8 @@ textarea {
 }
 
 .risk-ledger-header,
-.factor-row {
+.factor-row,
+.risk-ledger-total {
   display: grid;
   grid-template-columns: minmax(150px, 0.85fr) minmax(240px, 1.5fr) minmax(150px, 0.9fr) 64px;
   gap: 16px;
@@ -4797,6 +4798,19 @@ textarea {
   border-bottom: 1px solid var(--border);
   border-radius: 0;
   background: transparent;
+}
+
+.risk-ledger-total {
+  min-height: 48px;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+}
+
+.risk-ledger-total .factor-label,
+.risk-ledger-total .factor-points {
+  color: var(--text);
 }
 
 .factor-label,
@@ -5502,7 +5516,8 @@ textarea {
 
 @media (max-width: 900px) {
   .risk-ledger-header,
-  .factor-row {
+  .factor-row,
+  .risk-ledger-total {
     grid-template-columns: minmax(130px, 0.8fr) minmax(210px, 1.5fr) minmax(120px, 0.8fr) 52px;
     gap: 12px;
   }
@@ -5569,6 +5584,22 @@ textarea {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px 16px;
     padding: 14px 2px;
+  }
+
+  .risk-ledger-total {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 16px;
+    padding: 12px 2px;
+  }
+
+  .risk-ledger-total .factor-evidence,
+  .risk-ledger-total .factor-authority {
+    grid-column: 1 / -1;
+  }
+
+  .risk-ledger-total .factor-points {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .factor-label,

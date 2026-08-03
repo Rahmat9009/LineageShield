@@ -41,11 +41,11 @@ const CHANGE_COPY = {
 };
 
 const ARTIFACTS = {
-  migration: {key: "migration_sql", filename: "migration.sql"},
-  compatibility: {key: "compatibility_sql", filename: "compatibility_view.sql"},
-  tests: {key: "data_tests_yaml", filename: "schema_tests.yml"},
-  rollback: {key: "rollback_plan", filename: "ROLLBACK.md"},
-  pr: {key: "pull_request_summary", filename: "PULL_REQUEST.md"}
+  migration: {key: "migration_sql", filename: "migration.sql", language: "SQL"},
+  compatibility: {key: "compatibility_sql", filename: "compatibility.sql", language: "SQL"},
+  tests: {key: "data_tests_yaml", filename: "schema-tests.yml", language: "YAML"},
+  rollback: {key: "rollback_plan", filename: "rollback-steps.md", language: "Review steps"},
+  pr: {key: "pull_request_summary", filename: "pr-summary.md", language: "Markdown"}
 };
 
 const PROGRESS_LABELS = [
@@ -138,10 +138,15 @@ const elements = {
   agentNarrative: byId("agent-narrative"),
   agentToolkit: byId("agent-toolkit"),
   agentDuration: byId("agent-duration"),
+  agentRequestedCount: byId("agent-requested-count"),
+  agentSucceededCount: byId("agent-succeeded-count"),
+  agentFailedCount: byId("agent-failed-count"),
   agentFallback: byId("agent-fallback"),
   agentToolSummary: byId("agent-tool-summary"),
   agentExecutions: byId("agent-executions"),
   agentFallbackReason: byId("agent-fallback-reason"),
+  agentReferenceSummary: byId("agent-reference-summary"),
+  agentEvidenceDetails: document.querySelector(".agent-evidence-details"),
   agentEvidenceReferences: byId("agent-evidence-references"),
   lineageSurface: byId("lineage-surface"),
   lineageGraphRegion: byId("lineage-graph-region"),
@@ -191,24 +196,38 @@ const elements = {
   assets: byId("assets"),
   assetsEmpty: byId("assets-empty"),
   rawScore: byId("raw-score"),
+  riskFinalScore: byId("risk-final-score"),
+  riskDisposition: byId("risk-disposition"),
+  riskLedgerDisposition: document.querySelector(".risk-ledger-disposition"),
+  riskAuthoritySummary: byId("risk-authority-summary"),
+  riskFactorTotal: byId("risk-factor-total"),
   scoreCapNote: byId("score-cap-note"),
   factors: byId("factors"),
   approvals: byId("approvals"),
   artifactPanel: byId("artifact-panel"),
+  artifactFileSelect: byId("artifact-file-select"),
   artifactFilename: byId("artifact-filename"),
+  artifactLanguage: byId("artifact-language"),
+  artifactProvenance: byId("artifact-provenance"),
   artifactCode: byId("artifact-code").querySelector("code"),
   copyStatus: byId("copy-status"),
+  writebackWorkflow: byId("review-panel-writeback"),
   writebackStatus: byId("writeback-status"),
+  writebackModeState: byId("writeback-mode-state"),
+  writebackStateTitle: byId("writeback-state-title"),
   writebackAvailability: byId("writeback-availability"),
   previewWriteback: byId("preview-writeback"),
   writebackFeedback: byId("writeback-feedback"),
   writebackPreview: byId("writeback-preview"),
   writebackTarget: byId("writeback-target"),
   writebackTargetUrn: byId("writeback-target-urn"),
+  writebackAnalysisId: byId("writeback-analysis-id"),
+  writebackPreservation: byId("writeback-preservation"),
   writebackDecision: byId("writeback-decision"),
   writebackRisk: byId("writeback-risk"),
   writebackIdempotency: byId("writeback-idempotency"),
   writebackManagedSection: byId("writeback-managed-section"),
+  writebackResultingDetails: byId("writeback-resulting-details"),
   writebackResultingDescription: byId("writeback-resulting-description"),
   writebackWarnings: byId("writeback-warnings"),
   writebackConfirm: byId("writeback-confirm"),
@@ -238,6 +257,7 @@ const state = {
   provider: null,
   mutationsEnabled: false,
   writebackPreview: null,
+  writebackPreviewError: false,
   writebackOutcomeUnknown: false,
   progressTimers: [],
   copyTimer: null
@@ -703,6 +723,24 @@ function evidenceTypeLabel(type) {
   }[type] || "DataHub context";
 }
 
+function executionReferenceCount(execution, references) {
+  const explicitCount = Number(
+    execution.reference_count
+      ?? execution.evidence_count
+      ?? execution.result_count
+  );
+  if (Number.isFinite(explicitCount)) return explicitCount;
+
+  const evidenceType = {
+    "get_entities.root": "root_entity",
+    "get_lineage.column_downstream": "column_lineage",
+    "get_lineage.dataset_downstream": "dataset_lineage"
+  }[execution.operation];
+  return evidenceType
+    ? references.filter(reference => reference.evidence_type === evidenceType).length
+    : 0;
+}
+
 function renderAgentInvestigation(result) {
   const trace = result.agent_trace || {
     status: "unavailable",
@@ -722,6 +760,7 @@ function renderAgentInvestigation(result) {
   const requested = Array.isArray(trace.tools_requested) ? trace.tools_requested : [];
   const succeeded = Array.isArray(trace.tools_succeeded) ? trace.tools_succeeded : [];
   const executions = Array.isArray(trace.executions) ? trace.executions : [];
+  const failures = Array.isArray(trace.tool_failures) ? trace.tool_failures : [];
   const references = Array.isArray(trace.context_evidence_references)
     ? trace.context_evidence_references
     : [];
@@ -731,30 +770,57 @@ function renderAgentInvestigation(result) {
   elements.agentEvidenceCount.textContent = `${references.length} reference${references.length === 1 ? "" : "s"}`;
   elements.agentAuthoritativeResult.textContent = `${result.decision} · ${result.risk_score}/100`;
   elements.agentNarrativeSource.textContent = agentNarrativeSourceLabel(trace.narrative_source);
-  elements.agentModelState.textContent = trace.llm_used ? "Optional model used" : "No model called";
+  elements.agentModelState.textContent = String(trace.llm_used === true);
   elements.agentNarrative.textContent = trace.narrative || "No agent narrative was available.";
   elements.agentToolkit.textContent = trace.toolkit_version
     ? `${trace.toolkit || "datahub-agent-context"} ${trace.toolkit_version}`
     : (trace.toolkit || "datahub-agent-context");
   elements.agentDuration.textContent = `${Number(trace.duration_ms || 0).toLocaleString()} ms`;
   elements.agentFallback.textContent = trace.fallback_occurred ? "Used · recorded" : "Not used";
-  elements.agentToolSummary.textContent = `${requested.length} requested · ${succeeded.length} succeeded`;
+  elements.agentRequestedCount.textContent = String(requested.length);
+  elements.agentSucceededCount.textContent = String(succeeded.length);
+  elements.agentFailedCount.textContent = String(failures.length);
+  elements.agentFailedCount.dataset.state = failures.length ? "failure" : "none";
+  elements.agentToolSummary.textContent = `${requested.length} requested · ${succeeded.length} succeeded · ${failures.length} failed`;
+  elements.agentReferenceSummary.textContent = `${references.length} total`;
+  elements.agentEvidenceDetails.open = false;
 
   const executionItems = executions.map(execution => {
     const item = document.createElement("li");
     item.className = "agent-execution";
     item.dataset.state = execution.status || "failure";
-    const heading = document.createElement("div");
-    const operation = document.createElement("strong");
-    operation.textContent = execution.operation || execution.tool || "Context operation";
-    const status = document.createElement("span");
-    status.textContent = execution.status || "unknown";
-    heading.append(operation, status);
+    const operation = document.createElement("div");
+    operation.className = "agent-operation";
+    operation.dataset.label = "Operation";
+    const operationCode = document.createElement("code");
+    operationCode.textContent = execution.operation || execution.tool || "Context operation";
+    operation.append(operationCode);
+
+    const status = document.createElement("div");
+    status.className = "agent-operation-status";
+    status.dataset.label = "Status";
+    const statusText = document.createElement("span");
+    statusText.textContent = sentenceCase(execution.status || "unknown");
+    status.append(statusText);
+
+    const duration = document.createElement("div");
+    duration.className = "agent-operation-duration";
+    duration.dataset.label = "Duration";
+    const durationCode = document.createElement("code");
+    durationCode.textContent = `${Number(execution.duration_ms || 0).toLocaleString()} ms`;
+    duration.append(durationCode);
+
+    const referenceCount = document.createElement("div");
+    referenceCount.className = "agent-operation-references";
+    referenceCount.dataset.label = "References";
+    const count = executionReferenceCount(execution, references);
+    const countCode = document.createElement("code");
+    countCode.textContent = String(count);
+    referenceCount.append(countCode);
+
     const summary = document.createElement("p");
     summary.textContent = execution.result_summary || "No operation summary was returned.";
-    const duration = document.createElement("small");
-    duration.textContent = `${Number(execution.duration_ms || 0).toLocaleString()} ms · ${execution.tool || "tool"}`;
-    item.append(heading, summary, duration);
+    item.append(operation, status, duration, referenceCount, summary);
     return item;
   });
   if (!executionItems.length) {
@@ -932,7 +998,9 @@ function updateInspectorMode() {
 }
 
 function updateInspectorVisibility({focus = false} = {}) {
-  const evidenceView = state.reviewView === "lineage" || state.reviewView === "assets";
+  const evidenceView = state.reviewView === "lineage"
+    || state.reviewView === "assets"
+    || state.reviewView === "risk";
   const visible = Boolean(state.selectedAsset && state.inspectorOpen && evidenceView);
   const dialog = updateInspectorMode();
   elements.assetInspector.hidden = !visible;
@@ -965,6 +1033,11 @@ function syncSelectedAssetUI() {
     const selected = row.dataset.assetUrn === selectedUrn;
     row.classList.toggle("is-selected", selected);
     row.setAttribute("aria-selected", String(selected));
+  });
+  document.querySelectorAll(".factor-asset-link").forEach(button => {
+    const selected = button.dataset.assetUrn === selectedUrn;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
   });
   if (selectedUrn) state.lineageController?.selectUrn(selectedUrn, {notify: false});
 }
@@ -1277,27 +1350,108 @@ function renderAssetList() {
   syncSelectedAssetUI();
 }
 
+function referencedAssetsForFactor(factor, result) {
+  const evidence = String(factor.evidence || "").toLowerCase();
+  const qualityFactor = String(factor.label || "").toLowerCase().includes("quality");
+  const candidates = [normalizeRootAsset(result), ...result.affected_assets];
+  const seen = new Set();
+  return candidates.filter(asset => {
+    const name = String(asset.name || "").trim();
+    const explicitFailure = asset.quality_status === "failing"
+      && asset.metadata_sources?.quality === "datahub";
+    if (name.length < 3
+      || !evidence.includes(name.toLowerCase())
+      || seen.has(asset.urn)
+      || (qualityFactor && !explicitFailure)) {
+      return false;
+    }
+    seen.add(asset.urn);
+    return true;
+  });
+}
+
+function riskFactorAuthority(factor, referencedAssets, result) {
+  const label = String(factor.label || "").toLowerCase();
+  const providerLabel = result.provider === "datahub" ? "DataHub" : sentenceCase(result.provider || "provider");
+
+  if (label.includes("quality")) {
+    const explicitQuality = referencedAssets.some(asset => asset.metadata_sources?.quality === "datahub");
+    return explicitQuality ? "Explicit DataHub quality evidence" : `${providerLabel} evidence · deterministic rule`;
+  }
+  if (label.includes("business-critical") || label.includes("criticality")) {
+    return "LineageShield deterministic inference";
+  }
+  if (label.includes("cross-team") || label.includes("coordination")) {
+    return `${providerLabel} ownership · deterministic rule`;
+  }
+  if (label.includes("downstream") || label.includes("blast radius")) {
+    return `${providerLabel} lineage · deterministic rule`;
+  }
+  return "Change proposal · deterministic rule";
+}
+
+function factorEvidenceCell(factor, referencedAssets) {
+  const cell = document.createElement("div");
+  cell.className = "factor-evidence";
+  cell.setAttribute("role", "cell");
+  const evidence = document.createElement("span");
+  evidence.textContent = factor.evidence;
+  cell.append(evidence);
+
+  if (!referencedAssets.length) return cell;
+  const references = document.createElement("span");
+  references.className = "factor-asset-references";
+  referencedAssets.slice(0, 3).forEach(asset => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "factor-asset-link";
+    button.dataset.assetUrn = asset.urn;
+    button.setAttribute("aria-pressed", String(state.selectedAsset?.urn === asset.urn));
+    button.textContent = `Inspect ${asset.name || readableNameFromUrn(asset.urn)} · ${asset.platform || "Unknown platform"}`;
+    button.addEventListener("click", () => inspectAsset(asset, {trigger: button}));
+    references.append(button);
+  });
+  if (referencedAssets.length > 3) {
+    const remainder = document.createElement("span");
+    remainder.textContent = `+${referencedAssets.length - 3} more referenced`;
+    references.append(remainder);
+  }
+  cell.append(references);
+  return cell;
+}
+
 function renderRisk(result) {
   const rawScore = result.raw_risk_score
     ?? result.factors.reduce((sum, factor) => sum + factor.points, 0);
+  elements.riskDisposition.textContent = decisionLabel(result.decision);
+  elements.riskLedgerDisposition.dataset.decision = result.decision;
+  elements.riskFinalScore.textContent = `${result.risk_score}/100`;
   elements.rawScore.textContent = `${rawScore} point${rawScore === 1 ? "" : "s"}`;
+  elements.riskFactorTotal.textContent = String(rawScore);
   elements.scoreCapNote.textContent = rawScore > 100
-    ? `${rawScore} raw points are capped at 100.`
-    : "Final score uses the factor total shown.";
+    ? `${rawScore} raw points capped to ${result.risk_score}.`
+    : `Raw and capped score both equal ${result.risk_score}.`;
+  elements.riskAuthoritySummary.textContent = `${result.decision} at ${result.risk_score}/100 is the authoritative deterministic result. Agent Context supplies supplemental narrative only and cannot change this ledger.`;
 
   const factorRows = result.factors.map(factor => {
-    const row = document.createElement("article");
+    const referencedAssets = referencedAssetsForFactor(factor, result);
+    const row = document.createElement("div");
     row.className = "factor-row";
-    const label = document.createElement("strong");
+    row.setAttribute("role", "row");
+    const label = document.createElement("div");
     label.className = "factor-label";
+    label.setAttribute("role", "cell");
     label.textContent = factor.label;
-    const evidence = document.createElement("span");
-    evidence.className = "factor-evidence";
-    evidence.textContent = factor.evidence;
-    const points = document.createElement("span");
+    const evidence = factorEvidenceCell(factor, referencedAssets);
+    const authority = document.createElement("div");
+    authority.className = "factor-authority";
+    authority.setAttribute("role", "cell");
+    authority.textContent = riskFactorAuthority(factor, referencedAssets, result);
+    const points = document.createElement("div");
     points.className = "factor-points";
+    points.setAttribute("role", "cell");
     points.textContent = `+${factor.points}`;
-    row.append(label, evidence, points);
+    row.append(label, evidence, authority, points);
     return row;
   });
   elements.factors.replaceChildren(...factorRows);
@@ -1305,13 +1459,17 @@ function renderRisk(result) {
   const approvals = result.required_approvals || [];
   if (approvals.length) {
     elements.approvals.replaceChildren(...approvals.map(owner => {
-      const chip = document.createElement("span");
-      chip.className = "approval-chip";
-      chip.textContent = owner;
-      return chip;
+      const row = document.createElement("li");
+      row.className = "approval-row";
+      const name = document.createElement("strong");
+      name.textContent = owner;
+      const requirement = document.createElement("span");
+      requirement.textContent = "Required approval";
+      row.append(name, requirement);
+      return row;
     }));
   } else {
-    const empty = document.createElement("span");
+    const empty = document.createElement("li");
     empty.className = "approval-empty";
     empty.textContent = result.provider === "datahub"
       ? "No approvals identified from loaded owner metadata"
@@ -1332,6 +1490,12 @@ function renderArtifact() {
   if (!state.result) return;
   const config = ARTIFACTS[state.artifactTab];
   elements.artifactFilename.textContent = config.filename;
+  elements.artifactLanguage.textContent = `${config.language} · generated review artifact`;
+  elements.artifactProvenance.textContent = state.artifactTab === "rollback"
+    ? "Generated deterministically by LineageShield as human-readable rollback steps; this is not presented as executable SQL."
+    : "Generated deterministically by LineageShield for human review. No artifact was executed.";
+  elements.artifactFileSelect.value = state.artifactTab;
+  elements.artifactCode.parentElement.dataset.language = config.language.toLowerCase().replaceAll(" ", "-");
   elements.artifactCode.textContent = artifactText(state.result, state.artifactTab);
   const activeTab = byId(`tab-${state.artifactTab}`);
   elements.artifactPanel.setAttribute("aria-labelledby", activeTab.id);
@@ -1438,6 +1602,17 @@ function renderWritebackAvailability({connectionFailed = false} = {}) {
   elements.writebackStatus.dataset.state = status;
   elements.writebackStatus.textContent = label;
   elements.writebackAvailability.textContent = message;
+  elements.writebackModeState.textContent = status === "enabled"
+    ? "On · apply requires confirmation"
+    : (status === "disabled" ? "Off · read-only default" : label);
+  if (state.writebackPreviewError) {
+    elements.writebackWorkflow.dataset.writebackState = "preview-error";
+    elements.writebackStateTitle.textContent = "Preview unavailable";
+  } else if (!state.writebackPreview && elements.writebackReceipt.classList.contains("is-hidden")) {
+    const previewAvailable = Boolean(state.result && datahubAnalysis && !connectionFailed);
+    elements.writebackWorkflow.dataset.writebackState = previewAvailable ? "awaiting-preview" : "unavailable";
+    elements.writebackStateTitle.textContent = previewAvailable ? "Preview available" : "Preview unavailable";
+  }
   elements.headerMutationStatus.dataset.state = status;
   elements.headerMutationStatus.textContent = status === "enabled"
     ? "Mutations on"
@@ -1451,8 +1626,10 @@ function renderWritebackAvailability({connectionFailed = false} = {}) {
 
 function resetWriteback() {
   state.writebackPreview = null;
+  state.writebackPreviewError = false;
   state.writebackOutcomeUnknown = false;
   elements.writebackConfirm.checked = false;
+  elements.writebackResultingDetails.open = false;
   elements.writebackPreview.classList.add("is-hidden");
   elements.writebackReceipt.classList.add("is-hidden");
   elements.writebackFeedback.classList.add("is-hidden");
@@ -1472,17 +1649,31 @@ function setWritebackFeedback(message, stateName = "info") {
 function updateApplyAvailability() {
   elements.applyWriteback.disabled = !state.writebackPreview
     || !state.mutationsEnabled
+    || state.writebackPreviewError
     || state.writebackOutcomeUnknown
     || !elements.writebackConfirm.checked;
+  if (state.writebackPreview && !state.writebackPreviewError && !state.writebackOutcomeUnknown) {
+    elements.writebackWorkflow.dataset.writebackState = elements.writebackConfirm.checked
+      ? "confirmation-complete"
+      : "confirmation-required";
+    elements.writebackStateTitle.textContent = elements.writebackConfirm.checked
+      ? "Confirmation recorded"
+      : "Confirmation required";
+  }
 }
 
 function renderWritebackPreview(preview) {
   state.writebackPreview = preview;
+  state.writebackPreviewError = false;
   state.writebackOutcomeUnknown = false;
   state.mutationsEnabled = preview.mutations_enabled === true;
   const {record, mutation} = preview;
   elements.writebackTarget.textContent = record.root_asset.name || "Unnamed asset";
   elements.writebackTargetUrn.textContent = record.root_asset.urn;
+  elements.writebackAnalysisId.textContent = record.analysis_id || state.result?.analysis_id || "Unavailable";
+  elements.writebackPreservation.textContent = mutation.preserves_existing_description
+    ? "Preserved around the managed block"
+    : "No existing documentation was returned";
   elements.writebackDecision.textContent = record.decision;
   elements.writebackRisk.textContent = `${record.risk_score}/100 · ${record.risk_level}`;
   elements.writebackIdempotency.textContent = mutation.already_applied
@@ -1490,6 +1681,7 @@ function renderWritebackPreview(preview) {
     : "New managed record";
   elements.writebackManagedSection.textContent = mutation.managed_section;
   elements.writebackResultingDescription.textContent = mutation.resulting_description;
+  elements.writebackResultingDetails.open = false;
   elements.writebackWarnings.replaceChildren(...(preview.warnings || []).map(warning => {
     const item = document.createElement("li");
     item.textContent = warning;
@@ -1498,6 +1690,12 @@ function renderWritebackPreview(preview) {
   elements.writebackConfirm.checked = false;
   elements.writebackPreview.classList.remove("is-hidden");
   elements.writebackReceipt.classList.add("is-hidden");
+  elements.writebackWorkflow.dataset.writebackState = mutation.already_applied
+    ? "already-present"
+    : "preview-ready";
+  elements.writebackStateTitle.textContent = mutation.already_applied
+    ? "Preview ready · record already present"
+    : "Preview ready";
   renderWritebackAvailability();
   updateApplyAvailability();
 }
@@ -1513,6 +1711,12 @@ function renderWritebackReceipt(receipt) {
   elements.receiptMessage.textContent = receipt.message;
   elements.writebackPreview.classList.add("is-hidden");
   elements.writebackReceipt.classList.remove("is-hidden");
+  elements.writebackWorkflow.dataset.writebackState = receipt.status === "already_applied"
+    ? "already-applied"
+    : "applied";
+  elements.writebackStateTitle.textContent = receipt.status === "already_applied"
+    ? "Already applied"
+    : "Applied";
 }
 
 function editProposal() {
@@ -1641,17 +1845,22 @@ window.addEventListener("resize", () => {
 document.querySelectorAll(".artifact-tab").forEach(button => {
   button.addEventListener("click", () => selectArtifactTab(button));
   button.addEventListener("keydown", event => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const tabs = [...document.querySelectorAll(".artifact-tab")];
     const index = tabs.indexOf(button);
     let target = index;
-    if (event.key === "ArrowLeft") target = (index - 1 + tabs.length) % tabs.length;
-    if (event.key === "ArrowRight") target = (index + 1) % tabs.length;
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") target = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") target = (index + 1) % tabs.length;
     if (event.key === "Home") target = 0;
     if (event.key === "End") target = tabs.length - 1;
     selectArtifactTab(tabs[target], {focus: true});
   });
+});
+
+elements.artifactFileSelect.addEventListener("change", () => {
+  const button = byId(`tab-${elements.artifactFileSelect.value}`);
+  if (button) selectArtifactTab(button);
 });
 
 byId("copy-urn").addEventListener("click", async () => {
@@ -1678,6 +1887,7 @@ byId("download-artifact").addEventListener("click", () => {
   if (!state.result) return;
   const config = ARTIFACTS[state.artifactTab];
   downloadBlob(artifactText(state.result, state.artifactTab), config.filename, "text/plain;charset=utf-8");
+  announceCopy(`${config.filename} downloaded.`);
 });
 
 byId("download-json").addEventListener("click", () => {
@@ -1691,6 +1901,7 @@ byId("download-json").addEventListener("click", () => {
 
 elements.previewWriteback.addEventListener("click", async () => {
   if (!state.result) return;
+  state.writebackPreviewError = false;
   elements.previewWriteback.disabled = true;
   elements.previewWriteback.textContent = "Loading preview…";
   setWritebackFeedback("Reading the current root documentation. No mutation is being performed.");
@@ -1703,6 +1914,9 @@ elements.previewWriteback.addEventListener("click", async () => {
         : "Preview ready. Review the exact managed section before confirming."
     );
   } catch (error) {
+    state.writebackPreviewError = true;
+    elements.writebackWorkflow.dataset.writebackState = "preview-error";
+    elements.writebackStateTitle.textContent = "Preview unavailable";
     setWritebackFeedback(error.message, "error");
   } finally {
     elements.previewWriteback.textContent = "Preview DataHub record";
@@ -1724,6 +1938,10 @@ elements.applyWriteback.addEventListener("click", async () => {
   } catch (error) {
     const unknownOutcome = error.detail?.mutation_state === "unknown";
     state.writebackOutcomeUnknown = unknownOutcome;
+    if (unknownOutcome) {
+      elements.writebackWorkflow.dataset.writebackState = "unknown";
+      elements.writebackStateTitle.textContent = "Outcome unknown · inspect DataHub before retrying";
+    }
     setWritebackFeedback(
       unknownOutcome
         ? `${error.message} Do not retry until you inspect the root asset in DataHub.`
