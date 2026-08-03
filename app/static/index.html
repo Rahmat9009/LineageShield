@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#080d0b" />
+  <meta name="theme-color" content="#f4f6f8" />
   <meta
     name="description"
     content="LineageShield reviews schema changes against live DataHub lineage before they reach production."
   />
   <title>LineageShield · Schema change review</title>
+  <link rel="icon" type="image/svg+xml" sizes="any" href="/static/assets/brand/favicon.svg" />
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
@@ -17,53 +18,55 @@
   <header class="app-header">
     <div class="header-inner">
       <a class="brand" href="/" aria-label="LineageShield home">
-        <svg class="brand-mark" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
-          <path d="M18 3.5 30 8v8.7c0 7.3-4.9 13.7-12 15.8C10.9 30.4 6 24 6 16.7V8l12-4.5Z" />
-          <path d="M12 14h5m2 0h5m-12 7h5m2 0h5M17 11v13" />
-        </svg>
-        <span>
-          <strong>LineageShield</strong>
-          <small>Change review console</small>
-        </span>
+        <img
+          class="brand-wordmark"
+          src="/static/assets/brand/lineageshield-wordmark.svg"
+          width="136"
+          height="30"
+          alt=""
+          aria-hidden="true"
+        />
+        <span class="visually-hidden">LineageShield</span>
       </a>
 
-      <div class="header-description">
-        <span class="eyebrow">DATAHUB AGENT HACKATHON</span>
-        <p>Trace the live blast radius of a schema change before it reaches production.</p>
+      <div class="header-change is-hidden" id="header-change" aria-live="polite">
+        <strong id="header-root-asset">Root asset</strong>
+        <span id="header-change-detail">Schema change</span>
       </div>
 
-      <div class="system-state" id="system-state" data-state="checking" role="status" aria-live="polite">
-        <span class="status-indicator" aria-hidden="true"></span>
-        <span class="system-copy">
-          <strong id="connection-label">Checking DataHub</strong>
-          <small id="connection-detail">Verifying backend and provider</small>
-        </span>
-        <span class="provider-pill" id="provider-label">—</span>
-        <button class="icon-button is-hidden" id="retry-health" type="button" aria-label="Retry connection check">
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" />
+      <div class="header-actions">
+        <div class="system-state" id="system-state" data-state="checking" role="status" aria-live="polite">
+          <span class="status-indicator" aria-hidden="true"></span>
+          <span class="system-copy">
+            <strong id="connection-label">Checking DataHub</strong>
+            <small id="connection-detail">Verifying provider</small>
+          </span>
+          <span class="provider-label" id="provider-label">—</span>
+          <button class="icon-button is-hidden" id="retry-health" type="button" aria-label="Retry connection check">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" />
+            </svg>
+          </button>
+        </div>
+        <span class="header-mutation-status" id="header-mutation-status" data-state="checking">Checking write-back</span>
+        <button class="button button-secondary button-compact" id="download-json" type="button" aria-label="Export report" disabled>
+          <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3" />
           </svg>
+          <span>Export report</span>
         </button>
       </div>
     </div>
   </header>
 
-  <main id="main-content" class="page-shell" tabindex="-1">
-    <div class="workspace-heading">
-      <div>
-        <span class="eyebrow">PRE-MERGE INVESTIGATION</span>
-        <h1>Review a proposed schema change</h1>
-      </div>
-      <p>LineageShield combines deterministic scoring with live DataHub evidence, then generates practical migration safeguards.</p>
-    </div>
-
+  <main id="main-content" class="page-shell" data-view-state="empty" tabindex="-1">
     <div class="workspace-layout">
-      <aside class="proposal-column" aria-labelledby="proposal-title">
+      <aside class="proposal-column" aria-label="Proposed change and review navigation">
         <form id="change-form" class="panel proposal-panel" novalidate>
           <div class="panel-header">
             <div>
-              <span class="step-label">STEP 1</span>
-              <h2 id="proposal-title">Define the change</h2>
+              <h1 id="proposal-title">Proposed change</h1>
+              <p>Define the schema contract you want to review.</p>
             </div>
             <button type="button" id="load-demo" class="button button-secondary button-compact">
               <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
@@ -72,8 +75,6 @@
               Sample scenario
             </button>
           </div>
-
-          <p class="panel-intro">Select the source asset and describe the contract change you want to ship.</p>
 
           <div class="field" id="asset-urn-field">
             <label for="asset-urn">DataHub asset URN <span aria-hidden="true">*</span></label>
@@ -159,42 +160,138 @@
           <button class="button button-primary button-submit" id="analyze-button" type="submit">
             <span>
               <strong>Run investigation</strong>
-              <small>Query lineage and calculate risk</small>
+              <small>Review lineage, metadata, and deterministic risk</small>
             </span>
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 12h14m-5-5 5 5-5 5" />
             </svg>
           </button>
         </form>
+
+        <section class="review-spine is-hidden" id="review-spine" aria-label="Proposed change and review navigation">
+          <button
+            class="review-spine-toggle"
+            id="review-spine-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="review-spine-details"
+          >
+            <span>
+              <strong>Proposed change</strong>
+              <small id="review-spine-toggle-summary">Schema change</small>
+            </span>
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m7 9 5 5 5-5" />
+            </svg>
+          </button>
+
+          <div class="review-spine-details" id="review-spine-details">
+            <div class="review-spine-heading">
+              <span>Proposed change</span>
+              <button class="text-button" id="edit-review-proposal" type="button">Edit proposal</button>
+            </div>
+            <h2 id="review-spine-title">Root asset</h2>
+            <p class="review-spine-platform" id="review-spine-platform">Unknown platform</p>
+
+            <div class="schema-diff" aria-label="Schema change">
+              <div class="schema-diff-line is-removed">
+                <span aria-hidden="true">−</span>
+                <code id="review-diff-before">COLUMN</code>
+              </div>
+              <div class="schema-diff-line is-added">
+                <span aria-hidden="true">+</span>
+                <code id="review-diff-after">NEW_COLUMN</code>
+              </div>
+            </div>
+
+            <dl class="review-change-details">
+              <div><dt>Change type</dt><dd id="review-change-type">Rename column</dd></div>
+              <div><dt>Rationale</dt><dd id="review-change-reason">No rationale provided.</dd></div>
+            </dl>
+          </div>
+
+          <nav class="review-navigation" aria-label="Investigation views">
+            <div class="review-tabs" role="tablist" aria-label="Investigation views" aria-orientation="vertical">
+              <button class="review-tab is-active" id="review-tab-overview" type="button" role="tab" aria-selected="true" aria-controls="review-panel-overview" data-review-view="overview">
+                <span>Overview</span>
+              </button>
+              <button class="review-tab" id="review-tab-lineage" type="button" role="tab" aria-selected="false" aria-controls="review-panel-lineage" data-review-view="lineage" tabindex="-1">
+                <span>Lineage</span><strong id="review-count-lineage">0</strong>
+              </button>
+              <button class="review-tab" id="review-tab-assets" type="button" role="tab" aria-selected="false" aria-controls="review-panel-assets" data-review-view="assets" tabindex="-1">
+                <span>Affected assets</span><strong id="review-count-assets">0</strong>
+              </button>
+              <button class="review-tab" id="review-tab-risk" type="button" role="tab" aria-selected="false" aria-controls="review-panel-risk" data-review-view="risk" tabindex="-1">
+                <span>Risk evidence</span><strong id="review-count-risk">0</strong>
+              </button>
+              <button class="review-tab" id="review-tab-agent" type="button" role="tab" aria-selected="false" aria-controls="review-panel-agent" data-review-view="agent" tabindex="-1">
+                <span>Agent Context</span><strong id="review-count-agent">0</strong>
+              </button>
+              <button class="review-tab" id="review-tab-safeguards" type="button" role="tab" aria-selected="false" aria-controls="review-panel-safeguards" data-review-view="safeguards" tabindex="-1">
+                <span>Safeguards</span><strong id="review-count-safeguards">0</strong>
+              </button>
+              <button class="review-tab" id="review-tab-writeback" type="button" role="tab" aria-selected="false" aria-controls="review-panel-writeback" data-review-view="writeback" tabindex="-1">
+                <span>DataHub record</span>
+              </button>
+            </div>
+
+            <div class="review-view-selector">
+              <label for="review-view-select">Investigation view</label>
+              <select id="review-view-select">
+                <option value="overview">Overview</option>
+                <option value="lineage">Lineage · 0</option>
+                <option value="assets">Affected assets · 0</option>
+                <option value="risk">Risk evidence · 0</option>
+                <option value="agent">Agent Context · 0</option>
+                <option value="safeguards">Safeguards · 0</option>
+                <option value="writeback">DataHub record</option>
+              </select>
+            </div>
+          </nav>
+
+          <p class="review-read-only">Analysis is read-only. Write-back requires a separate preview and confirmation.</p>
+        </section>
       </aside>
 
       <section class="investigation-column" aria-label="Investigation result">
         <section id="empty-state" class="panel state-panel empty-state">
-          <div class="state-illustration" aria-hidden="true">
-            <svg width="112" height="112" viewBox="0 0 112 112">
-              <circle cx="56" cy="56" r="45" />
-              <circle cx="56" cy="56" r="25" />
-              <path d="M56 11v20M56 81v20M11 56h20M81 56h20" />
-              <circle class="state-node" cx="56" cy="56" r="6" />
-              <circle class="state-node" cx="86" cy="38" r="5" />
-              <circle class="state-node" cx="32" cy="78" r="5" />
-            </svg>
+          <div class="readiness-heading">
+            <span class="readiness-mark" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24">
+                <path d="M12 3 20 6v6c0 4.8-3.2 8.5-8 9.8C7.2 20.5 4 16.8 4 12V6l8-3Z" />
+                <path d="m8.5 12 2.2 2.2 4.8-5" />
+              </svg>
+            </span>
+            <div>
+              <h2>Ready for review</h2>
+              <p>Run an investigation to assemble the evidence needed for a schema-change decision.</p>
+            </div>
           </div>
-          <span class="step-label">STEP 2</span>
-          <h2>Ready to trace the blast radius</h2>
-          <p>Submit a change to resolve the source, traverse downstream lineage, score deterministic evidence, and generate safeguards.</p>
-          <ol class="workflow-preview" aria-label="Investigation workflow">
-            <li><span>1</span> Resolve source</li>
-            <li><span>2</span> Trace lineage</li>
-            <li><span>3</span> Decide</li>
-          </ol>
+          <dl class="readiness-list">
+            <div>
+              <dt>Downstream impact</dt>
+              <dd>Resolve the source and trace live DataHub lineage within the configured scope.</dd>
+            </div>
+            <div>
+              <dt>Deterministic decision</dt>
+              <dd>Calculate a fixed, explainable risk score from provider evidence.</dd>
+            </div>
+            <div>
+              <dt>Review safeguards</dt>
+              <dd>Generate migration artifacts for human review without executing SQL.</dd>
+            </div>
+          </dl>
+          <div class="readiness-safety">
+            <strong>Read-only by default</strong>
+            <span>Analysis and preview do not mutate DataHub. Recording a result is a separate, explicitly confirmed action.</span>
+          </div>
         </section>
 
         <section id="loading-state" class="panel state-panel loading-state is-hidden" aria-live="polite" aria-busy="true">
           <div class="loading-heading">
             <span class="loading-spinner" aria-hidden="true"></span>
             <div>
-              <span class="step-label">INVESTIGATION RUNNING</span>
+              <span class="step-label">Investigation running</span>
               <h2 id="loading-title">Resolving source asset</h2>
             </div>
           </div>
@@ -216,7 +313,7 @@
               <path d="M12 3 2.5 20h19L12 3Zm0 6v5m0 3.5v.5" />
             </svg>
           </div>
-          <span class="step-label">INVESTIGATION INTERRUPTED</span>
+          <span class="step-label">Investigation interrupted</span>
           <h2 id="error-title">DataHub could not be reached</h2>
           <p id="error-message">Check that the local DataHub service is running, then try the investigation again.</p>
           <div class="error-actions">
@@ -226,160 +323,226 @@
         </section>
 
         <div id="result-view" class="result-view is-hidden">
-          <section class="decision-panel panel" id="decision-panel" data-decision="BLOCK" aria-labelledby="decision-heading">
-            <div class="decision-toolbar">
-              <div>
-                <span class="step-label">MERGE DECISION</span>
-                <h2 id="decision-heading">Investigation complete</h2>
+          <section
+            class="decision-panel panel review-panel"
+            id="review-panel-overview"
+            data-review-view="overview"
+            data-decision="BLOCK"
+            role="tabpanel"
+            aria-labelledby="review-tab-overview"
+            tabindex="-1"
+          >
+            <div class="decision-main" id="decision-panel">
+              <div class="decision-copy">
+                <span class="view-label">Disposition</span>
+                <h1 id="decision-heading"><span id="decision">Merge blocked</span></h1>
+                <strong class="risk-kicker" id="risk-level">Critical risk</strong>
               </div>
-              <button class="button button-secondary button-compact" id="download-json" type="button">
-                <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 3v12m-4-4 4 4 4-4M4 18v3h16v-3" />
-                </svg>
-                Export report
-              </button>
-            </div>
-
-            <div class="decision-main">
-              <div class="decision-word" id="decision">BLOCK</div>
-              <div class="decision-explanation">
-                <span class="risk-kicker" id="risk-level">CRITICAL RISK</span>
-                <p id="explanation"></p>
-              </div>
-            </div>
-
-            <div class="metric-grid" aria-label="Investigation summary">
-              <article class="metric-card metric-score">
-                <span>Risk score</span>
+              <div class="decision-score">
                 <strong id="risk-score">0<span>/100</span></strong>
-                <div class="score-meter" aria-hidden="true"><span id="score-meter-fill"></span></div>
-              </article>
-              <article class="metric-card">
-                <span>Affected assets</span>
-                <strong id="asset-metric">0</strong>
-                <small>Downstream dependencies</small>
-              </article>
-              <article class="metric-card">
-                <span>Platforms</span>
-                <strong id="platform-metric">0</strong>
-                <small id="platform-summary">None identified</small>
-              </article>
-              <article class="metric-card">
-                <span>Required approvals</span>
-                <strong id="approval-metric">0</strong>
-                <small id="approval-summary">None identified</small>
-              </article>
+                <span>Block threshold: <code>50</code></span>
+              </div>
             </div>
 
-            <div class="evidence-key">
-              <span><i class="key-dot deterministic"></i><strong>Deterministic evidence</strong> drives the score and decision.</span>
-              <span><i class="key-dot generated"></i><strong>Generated safeguards</strong> are review-ready recommendations.</span>
+            <p class="decision-explanation" id="explanation"></p>
+            <div class="score-meter" aria-hidden="true"><span id="score-meter-fill"></span></div>
+
+            <div class="overview-grid">
+              <section class="overview-section overview-evidence" aria-labelledby="overview-evidence-heading">
+                <div class="overview-section-heading">
+                  <div>
+                    <h2 id="overview-evidence-heading">Deterministic findings</h2>
+                    <p>Fixed scoring rules produce the decision. Generated recommendations cannot alter it.</p>
+                  </div>
+                  <strong id="overview-raw-score">0 points</strong>
+                </div>
+                <div class="overview-factor-list" id="overview-factors"></div>
+              </section>
+
+              <aside class="overview-facts" aria-label="Review facts">
+                <section class="overview-section">
+                  <h2>Review facts</h2>
+                  <dl class="metric-grid" aria-label="Investigation summary">
+                    <div class="metric-card">
+                      <dt>Affected assets</dt>
+                      <dd id="asset-metric">0</dd>
+                    </div>
+                    <div class="metric-card">
+                      <dt>Platforms</dt>
+                      <dd id="platform-metric">0</dd>
+                      <small id="platform-summary">None identified</small>
+                    </div>
+                    <div class="metric-card">
+                      <dt>Required approvals</dt>
+                      <dd id="approval-metric">0</dd>
+                      <small id="approval-summary">None identified</small>
+                    </div>
+                    <div class="metric-card">
+                      <dt>Entities enriched</dt>
+                      <dd id="metadata-metric">Unavailable</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section class="overview-section quality-evidence">
+                  <h2>Strongest failing quality evidence</h2>
+                  <p id="overview-quality-evidence">No identifiable failing DataHub quality evidence returned.</p>
+                </section>
+
+                <section class="overview-section">
+                  <h2>Evidence authority</h2>
+                  <dl class="authority-list">
+                    <div>
+                      <dt>DataHub evidence</dt>
+                      <dd id="overview-datahub-authority">Provider evidence</dd>
+                    </div>
+                    <div>
+                      <dt>LineageShield calculation</dt>
+                      <dd id="overview-calculation-authority">Deterministic and authoritative</dd>
+                    </div>
+                    <div>
+                      <dt>Agent Context narrative</dt>
+                      <dd id="overview-agent-authority">Supplemental evidence summary</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <p class="overview-read-only">
+                  <strong>Read-only analysis.</strong>
+                  No migration SQL was executed. DataHub write-back remains a separate preview and confirmation flow.
+                </p>
+              </aside>
             </div>
           </section>
 
-          <section class="panel content-panel agent-panel" aria-labelledby="agent-heading">
-            <div class="section-heading section-heading-inline">
+          <section class="panel content-panel agent-panel agent-audit-view review-panel" id="review-panel-agent" data-review-view="agent" role="tabpanel" aria-labelledby="review-tab-agent" tabindex="-1" hidden>
+            <header class="section-heading section-heading-inline">
               <div>
-                <span class="section-index">01 · AGENT CONTEXT</span>
-                <h2 id="agent-heading">Agent investigation</h2>
-                <p>Read-only DataHub context operations are audited separately from the authoritative LineageShield calculation.</p>
+                <span class="section-index">Agent Context evidence</span>
+                <h2 id="agent-heading">Read-only check suite</h2>
+                <p>Audit the bounded DataHub read operations that supplemented this investigation.</p>
               </div>
               <span class="agent-status" id="agent-status" data-state="unavailable">Unavailable</span>
-            </div>
+            </header>
 
-            <div class="provenance-grid" aria-label="Investigation provenance">
-              <article>
-                <span>DataHub-retrieved evidence</span>
-                <strong id="agent-evidence-count">0 references</strong>
-                <small>Agent Context Kit read tools</small>
-              </article>
-              <article>
-                <span>LineageShield calculation</span>
-                <strong id="agent-authoritative-result">—</strong>
-                <small>Deterministic and authoritative</small>
-              </article>
-              <article>
-                <span>Agent narrative</span>
-                <strong id="agent-narrative-source">Unavailable</strong>
-                <small id="agent-model-state">No model called</small>
-              </article>
-            </div>
+            <dl class="agent-audit-summary" aria-label="Agent Context execution summary">
+              <div><dt>Toolkit</dt><dd id="agent-toolkit">datahub-agent-context</dd></div>
+              <div><dt>Duration</dt><dd id="agent-duration">0 ms</dd></div>
+              <div><dt>Requested</dt><dd id="agent-requested-count">0</dd></div>
+              <div><dt>Succeeded</dt><dd id="agent-succeeded-count">0</dd></div>
+              <div><dt>Failed</dt><dd id="agent-failed-count">0</dd></div>
+              <div><dt>Fallback</dt><dd id="agent-fallback">Not used</dd></div>
+              <div><dt><code>llm_used</code></dt><dd><code id="agent-model-state">false</code></dd></div>
+            </dl>
 
-            <div class="agent-summary">
-              <div>
-                <span class="agent-narrative-label">CONTEXT NARRATIVE</span>
-                <p id="agent-narrative">Agent Context Kit did not execute for this investigation.</p>
-              </div>
-              <dl class="agent-metrics">
-                <div><dt>Toolkit</dt><dd id="agent-toolkit">datahub-agent-context</dd></div>
-                <div><dt>Duration</dt><dd id="agent-duration">0 ms</dd></div>
-                <div><dt>Fallback</dt><dd id="agent-fallback">Not used</dd></div>
+            <section class="agent-authority" aria-labelledby="agent-authority-heading">
+              <h3 id="agent-authority-heading">Evidence authority</h3>
+              <dl>
+                <div>
+                  <dt>DataHub provider evidence</dt>
+                  <dd><strong id="agent-evidence-count">0 references</strong><span>Read-only source evidence</span></dd>
+                </div>
+                <div>
+                  <dt>LineageShield calculation</dt>
+                  <dd><strong id="agent-authoritative-result">—</strong><span>Deterministic and authoritative</span></dd>
+                </div>
+                <div>
+                  <dt>Agent Context narrative</dt>
+                  <dd><strong id="agent-narrative-source">Unavailable</strong><span>Supplemental only</span></dd>
+                </div>
               </dl>
-            </div>
+            </section>
 
-            <div class="agent-trace">
+            <section class="agent-narrative-section" aria-labelledby="agent-narrative-heading">
+              <h3 id="agent-narrative-heading">Deterministic narrative</h3>
+              <p id="agent-narrative">Agent Context Kit did not execute for this investigation.</p>
+            </section>
+
+            <section class="agent-trace" aria-labelledby="agent-trace-heading">
               <div class="agent-trace-heading">
-                <h3>Tool execution trace</h3>
+                <h3 id="agent-trace-heading">Tool execution trace</h3>
                 <span id="agent-tool-summary">0 requested · 0 succeeded</span>
+              </div>
+              <div class="agent-execution-header" aria-hidden="true">
+                <span>Operation</span><span>Status</span><span>Duration</span><span>References</span>
               </div>
               <ol id="agent-executions" class="agent-executions"></ol>
               <p id="agent-fallback-reason" class="agent-fallback-reason is-hidden"></p>
               <details class="agent-evidence-details">
-                <summary>Inspect context evidence references</summary>
+                <summary>Evidence references <span id="agent-reference-summary">0 total</span></summary>
                 <ul id="agent-evidence-references"></ul>
               </details>
-            </div>
+            </section>
           </section>
 
-          <section class="panel content-panel" aria-labelledby="lineage-heading">
-            <div class="section-heading">
+          <section class="review-panel evidence-view lineage-view" id="review-panel-lineage" data-review-view="lineage" role="tabpanel" aria-labelledby="review-tab-lineage" tabindex="-1" hidden>
+            <header class="evidence-view-header">
               <div>
-                <span class="section-index">02 · LIVE EVIDENCE</span>
+                <span class="section-index">Live lineage evidence</span>
                 <h2 id="lineage-heading">Lineage blast radius</h2>
-                <p>Every node is derived from the provider response. Select one to inspect its metadata.</p>
+                <p>Trace the returned dependency graph, then select an asset to inspect its metadata evidence.</p>
               </div>
-              <div class="lineage-legend" aria-label="Asset type legend">
-                <span><i class="legend-swatch dataset"></i>Dataset</span>
-                <span><i class="legend-swatch pipeline"></i>Pipeline</span>
-                <span><i class="legend-swatch reporting"></i>BI &amp; reporting</span>
-                <span><i class="legend-swatch ml"></i>ML</span>
+              <div class="lineage-toolbar" role="toolbar" aria-label="Lineage display controls">
+                <button class="button button-secondary button-compact" id="fit-lineage" type="button">
+                  <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5" />
+                  </svg>
+                  Fit graph
+                </button>
+                <button class="button button-secondary button-compact" id="reset-lineage-selection" type="button">
+                  Reset selection
+                </button>
+                <button class="button button-secondary button-compact" id="toggle-lineage-list" type="button" aria-pressed="false" aria-controls="lineage-graph-region lineage-asset-list">
+                  View as asset list
+                </button>
               </div>
+            </header>
+
+            <div class="lineage-legend" id="lineage-legend" aria-label="Asset type legend">
+              <span><i class="legend-swatch dataset"></i>Dataset</span>
+              <span><i class="legend-swatch pipeline"></i>Pipeline</span>
+              <span><i class="legend-swatch reporting"></i>BI &amp; reporting</span>
+              <span><i class="legend-swatch ml"></i>ML</span>
+              <span><i class="legend-line"></i>Selected connection</span>
             </div>
 
-            <div class="lineage-layout">
-              <div class="lineage-canvas" id="lineage-canvas" aria-live="polite"></div>
-              <aside class="node-inspector" id="node-inspector" aria-labelledby="node-inspector-title">
-                <span class="inspector-type" id="inspector-type">SOURCE DATASET</span>
-                <h3 id="node-inspector-title">Select a lineage node</h3>
-                <p id="inspector-description">Asset metadata will appear here.</p>
-                <dl id="inspector-metadata"></dl>
-                <div class="urn-block is-hidden" id="inspector-urn-block">
-                  <span>Full DataHub URN</span>
-                  <code id="inspector-urn"></code>
-                  <button class="button button-secondary button-compact" id="copy-urn" type="button">Copy URN</button>
-                </div>
-              </aside>
+            <div class="lineage-surface" id="lineage-surface" data-display="graph">
+              <div class="lineage-graph-region" id="lineage-graph-region">
+                <div class="lineage-canvas" id="lineage-canvas" aria-live="polite" tabindex="0"></div>
+              </div>
+              <div class="lineage-asset-list" id="lineage-asset-list" role="listbox" aria-label="Lineage assets" hidden></div>
             </div>
-            <p class="lineage-note" id="lineage-note"></p>
+
+            <dl class="lineage-scope" aria-label="Lineage evidence scope">
+              <div><dt>Evidence path</dt><dd id="lineage-scope-fallback">Provider lineage</dd></div>
+              <div><dt>Downstream assets</dt><dd id="lineage-scope-count">0</dd></div>
+              <div><dt>Hop limit</dt><dd id="lineage-scope-hops">2</dd></div>
+              <div><dt>Display limit</dt><dd id="lineage-scope-limit">60 assets</dd></div>
+            </dl>
+            <details class="lineage-context-note">
+              <summary>Investigation context</summary>
+              <p class="lineage-note" id="lineage-note"></p>
+            </details>
           </section>
 
-          <section class="panel content-panel" aria-labelledby="assets-heading">
-            <div class="section-heading section-heading-inline">
+          <section class="review-panel evidence-view assets-view" id="review-panel-assets" data-review-view="assets" role="tabpanel" aria-labelledby="review-tab-assets" tabindex="-1" hidden>
+            <header class="evidence-view-header">
               <div>
-                <span class="section-index">03 · AFFECTED ASSETS</span>
+                <span class="section-index">Affected assets</span>
                 <h2 id="assets-heading">Dependency explorer</h2>
+                <p>Filter the returned blast radius and inspect ownership, quality, and metadata provenance.</p>
               </div>
-              <strong class="result-count" id="asset-count">0 results</strong>
-            </div>
+              <strong class="result-count" id="asset-count" aria-live="polite">0 results</strong>
+            </header>
 
-            <div class="filter-bar" aria-label="Filter affected assets">
+            <div class="asset-toolbar" aria-label="Filter affected assets">
               <div class="search-control">
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="10.5" cy="10.5" r="6.5" />
                   <path d="m16 16 4.5 4.5" />
                 </svg>
                 <label class="visually-hidden" for="asset-search">Search affected assets</label>
-                <input id="asset-search" type="search" placeholder="Search asset or platform" autocomplete="off" />
+                <input id="asset-search" type="search" placeholder="Search asset, platform, owner, or evidence" autocomplete="off" />
               </div>
               <label>
                 <span class="visually-hidden">Asset type</span>
@@ -407,91 +570,228 @@
                   <option value="low">Low</option>
                 </select>
               </label>
-              <button class="button button-secondary button-compact" id="clear-filters" type="button">Clear</button>
+              <button class="button button-secondary button-compact quality-filter" id="failing-quality-filter" type="button" aria-pressed="false">
+                Failing quality <span id="failing-quality-count">0</span>
+              </button>
+              <button class="button button-secondary button-compact" id="clear-filters" type="button">Clear filters</button>
             </div>
 
-            <div class="asset-list-header" aria-hidden="true">
-              <span>Asset</span><span>Platform &amp; type</span><span>Criticality</span>
+            <div class="asset-table" role="group" aria-labelledby="assets-heading">
+              <div class="asset-list-header" aria-hidden="true">
+                <span>Asset</span>
+                <span>Platform / type</span>
+                <span>Dependency evidence</span>
+                <span>Criticality</span>
+                <span>Quality</span>
+                <span>Owner</span>
+              </div>
+              <div class="asset-list" id="assets" role="listbox" aria-label="Affected assets"></div>
             </div>
-            <div class="asset-list" id="assets"></div>
-            <div class="inline-empty is-hidden" id="assets-empty">
-              <strong>No assets match these filters</strong>
-              <span>Clear the filters or try a broader search.</span>
+            <div class="inline-empty is-hidden" id="assets-empty" role="status">
+              <strong>No affected assets match the current filters</strong>
+              <span>Clear filters or broaden the search to return to the full dependency set.</span>
             </div>
           </section>
 
-          <section class="panel content-panel" aria-labelledby="risk-heading">
-            <div class="section-heading">
+          <div class="asset-inspector-backdrop" id="asset-inspector-backdrop" hidden></div>
+          <aside class="asset-inspector" id="asset-inspector" aria-labelledby="node-inspector-title" tabindex="-1" hidden>
+            <header class="asset-inspector-header">
               <div>
-                <span class="section-index">04 · DETERMINISTIC ANALYSIS</span>
-                <h2 id="risk-heading">Risk evidence</h2>
-                <p>Each factor is produced by fixed scoring rules. Recommendations cannot alter this decision.</p>
+                <span class="inspector-type" id="inspector-type">Selected asset</span>
+                <h2 id="node-inspector-title">Asset metadata</h2>
+                <p id="inspector-platform-type">Platform and type</p>
               </div>
-              <div class="score-composition">
-                <span>Factor total</span>
-                <strong id="raw-score">0 points</strong>
-                <small id="score-cap-note">Final score is capped at 100.</small>
+              <button class="button button-secondary button-compact inspector-close" id="close-asset-inspector" type="button">
+                <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+                Close
+              </button>
+            </header>
+
+            <div class="asset-inspector-body">
+              <dl class="inspector-evidence" id="inspector-metadata">
+                <div>
+                  <dt>Dependency evidence</dt>
+                  <dd id="inspector-dependency">Select an asset to inspect its dependency path.</dd>
+                </div>
+                <div>
+                  <dt>Criticality</dt>
+                  <dd><strong id="inspector-criticality">Unknown</strong><span id="inspector-criticality-source">Source unavailable</span></dd>
+                </div>
+                <div>
+                  <dt>Quality</dt>
+                  <dd><strong id="inspector-quality">Unknown</strong><span id="inspector-quality-source">Source unavailable</span></dd>
+                </div>
+                <div>
+                  <dt>Usage</dt>
+                  <dd id="inspector-usage">Unavailable · score retained at 0</dd>
+                </div>
+              </dl>
+
+              <section class="inspector-section" aria-labelledby="inspector-owners-heading">
+                <h3 id="inspector-owners-heading">Owners and roles</h3>
+                <ul class="inspector-owner-list" id="inspector-owners"></ul>
+              </section>
+
+              <section class="inspector-section" aria-labelledby="inspector-governance-heading">
+                <h3 id="inspector-governance-heading">Tags and glossary terms</h3>
+                <dl class="inspector-compact-list">
+                  <div><dt>Tags</dt><dd id="inspector-tags">Unavailable</dd></div>
+                  <div><dt>Glossary</dt><dd id="inspector-glossary">Unavailable</dd></div>
+                </dl>
+              </section>
+
+              <section class="inspector-section" aria-labelledby="inspector-schema-heading">
+                <h3 id="inspector-schema-heading">Schema fields</h3>
+                <p class="inspector-schema-summary" id="inspector-fields">Unavailable</p>
+              </section>
+
+              <section class="inspector-section" aria-labelledby="inspector-properties-heading">
+                <h3 id="inspector-properties-heading">Structured properties</h3>
+                <dl class="inspector-property-list" id="inspector-properties"></dl>
+              </section>
+
+              <section class="inspector-section inspector-description-section" aria-labelledby="inspector-description-heading">
+                <h3 id="inspector-description-heading">Description</h3>
+                <p id="inspector-description">No description is available.</p>
+                <p class="inspector-description-note is-hidden" id="inspector-description-note"></p>
+                <details id="inspector-full-description">
+                  <summary>Full description</summary>
+                  <div id="inspector-description-full"></div>
+                </details>
+              </section>
+
+              <div class="urn-block" id="inspector-urn-block">
+                <span>Full DataHub URN</span>
+                <code id="inspector-urn"></code>
+                <button class="button button-secondary button-compact" id="copy-urn" type="button">Copy URN</button>
+                <span class="inspector-copy-status" id="inspector-copy-status" aria-live="polite"></span>
               </div>
             </div>
-            <div class="factor-list" id="factors"></div>
+          </aside>
+
+          <section class="panel content-panel risk-ledger-view review-panel" id="review-panel-risk" data-review-view="risk" role="tabpanel" aria-labelledby="review-tab-risk" tabindex="-1" hidden>
+            <header class="section-heading section-heading-inline">
+              <div>
+                <span class="section-index">Deterministic analysis</span>
+                <h2 id="risk-heading">Risk evidence ledger</h2>
+                <p>The score and decision are authoritative outputs from fixed LineageShield rules.</p>
+              </div>
+              <div class="risk-ledger-disposition" data-decision="BLOCK">
+                <span>Disposition</span>
+                <strong id="risk-disposition">Decision unavailable</strong>
+              </div>
+            </header>
+
+            <dl class="risk-score-ledger" aria-label="Deterministic score summary">
+              <div><dt>Deterministic score</dt><dd id="risk-final-score">0/100</dd></div>
+              <div><dt>Block threshold</dt><dd><code>50</code></dd></div>
+              <div><dt>Raw score</dt><dd id="raw-score">0 points</dd></div>
+              <div><dt>Score handling</dt><dd id="score-cap-note">Final score is capped at 100.</dd></div>
+            </dl>
+
+            <div class="risk-ledger" role="table" aria-label="Risk factor contributions">
+              <div class="risk-ledger-header" role="row">
+                <span role="columnheader">Factor</span>
+                <span role="columnheader">Evidence</span>
+                <span role="columnheader">Authority</span>
+                <span role="columnheader">Points</span>
+              </div>
+              <div class="factor-list" id="factors" role="rowgroup"></div>
+              <div class="risk-ledger-total" role="row">
+                <div class="factor-label" role="cell">Total calculation</div>
+                <div class="factor-evidence" role="cell">Sum of all deterministic factor contributions</div>
+                <div class="factor-authority" role="cell">Authoritative LineageShield result</div>
+                <div class="factor-points" id="risk-factor-total" role="cell">0</div>
+              </div>
+            </div>
+
+            <p class="risk-authority-note" id="risk-authority-summary">
+              Agent Context supplies supplemental narrative only and cannot change this ledger.
+            </p>
 
             <div class="approvals-section">
               <div>
                 <h3>Required approvals</h3>
                 <p>Owners of high- and critical-impact assets are listed when provider metadata is available.</p>
               </div>
-              <div class="approval-list" id="approvals"></div>
+              <ol class="approval-list" id="approvals"></ol>
             </div>
           </section>
 
-          <section class="panel content-panel" aria-labelledby="safeguards-heading">
+          <section class="panel content-panel safeguards-review-view review-panel" id="review-panel-safeguards" data-review-view="safeguards" role="tabpanel" aria-labelledby="review-tab-safeguards" tabindex="-1" hidden>
             <div class="section-heading section-heading-inline">
               <div>
-                <span class="section-index">05 · GENERATED RECOMMENDATIONS</span>
-                <h2 id="safeguards-heading">Migration safeguards</h2>
-                <p>Review and adapt these artifacts before applying them to a repository or warehouse.</p>
+                <span class="section-index">Generated recommendations</span>
+                <h2 id="safeguards-heading">Safeguard file review</h2>
+                <p>Compare the generated artifacts without executing or applying any of their contents.</p>
               </div>
             </div>
 
-            <div class="artifact-tabs" role="tablist" aria-label="Generated safeguards">
-              <button id="tab-migration" class="artifact-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="artifact-panel" data-tab="migration">Migration</button>
-              <button id="tab-compatibility" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="compatibility">Compatibility</button>
-              <button id="tab-tests" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="tests">Tests</button>
-              <button id="tab-rollback" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="rollback">Rollback</button>
-              <button id="tab-pr" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="pr">PR summary</button>
+            <p class="safeguard-warning" role="note">
+              <strong>Generated for review.</strong> No migration SQL was executed.
+            </p>
+
+            <div class="artifact-file-selector">
+              <label for="artifact-file-select">Generated file</label>
+              <select id="artifact-file-select" aria-controls="artifact-panel">
+                <option value="migration">migration.sql</option>
+                <option value="compatibility">compatibility.sql</option>
+                <option value="tests">schema-tests.yml</option>
+                <option value="rollback">rollback-steps.md</option>
+                <option value="pr">pr-summary.md</option>
+              </select>
             </div>
 
-            <div class="artifact-panel" id="artifact-panel" role="tabpanel" aria-labelledby="tab-migration">
-              <div class="code-toolbar">
-                <span>
-                  <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 3h8l4 4v14H4V3h4Zm7 0v5h5" />
-                  </svg>
-                  <strong id="artifact-filename">migration.sql</strong>
-                </span>
-                <span class="code-actions">
-                  <button class="button button-secondary button-compact" id="copy-artifact" type="button">Copy</button>
-                  <button class="button button-secondary button-compact" id="download-artifact" type="button">Download</button>
-                </span>
+            <div class="safeguard-workspace">
+              <div class="artifact-tabs" role="tablist" aria-label="Generated safeguard files" aria-orientation="vertical">
+                <button id="tab-migration" class="artifact-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="artifact-panel" data-tab="migration"><strong>migration.sql</strong><span>SQL</span></button>
+                <button id="tab-compatibility" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="compatibility"><strong>compatibility.sql</strong><span>SQL</span></button>
+                <button id="tab-tests" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="tests"><strong>schema-tests.yml</strong><span>YAML</span></button>
+                <button id="tab-rollback" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="rollback"><strong>rollback-steps.md</strong><span>Review steps</span></button>
+                <button id="tab-pr" class="artifact-tab" type="button" role="tab" aria-selected="false" aria-controls="artifact-panel" tabindex="-1" data-tab="pr"><strong>pr-summary.md</strong><span>Markdown</span></button>
               </div>
-              <pre id="artifact-code" tabindex="0"><code></code></pre>
+
+              <div class="artifact-panel" id="artifact-panel" role="tabpanel" aria-labelledby="tab-migration">
+                <div class="code-toolbar">
+                  <span class="artifact-file-identity">
+                    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 3h8l4 4v14H4V3h4Zm7 0v5h5" />
+                    </svg>
+                    <span><strong id="artifact-filename">migration.sql</strong><small id="artifact-language">SQL · generated review artifact</small></span>
+                  </span>
+                  <span class="code-actions">
+                    <button class="button button-secondary button-compact" id="copy-artifact" type="button">Copy</button>
+                    <button class="button button-secondary button-compact" id="download-artifact" type="button">Download</button>
+                  </span>
+                </div>
+                <pre id="artifact-code" tabindex="0" aria-label="Selected generated artifact"><code></code></pre>
+                <p class="artifact-provenance" id="artifact-provenance">Generated deterministically by LineageShield for human review.</p>
+              </div>
             </div>
             <p class="copy-status" id="copy-status" aria-live="polite"></p>
           </section>
 
-          <section class="panel content-panel writeback-panel" aria-labelledby="writeback-heading">
+          <section class="panel content-panel writeback-panel writeback-workflow review-panel" id="review-panel-writeback" data-review-view="writeback" data-writeback-state="unavailable" role="tabpanel" aria-labelledby="review-tab-writeback" tabindex="-1" hidden>
             <div class="section-heading section-heading-inline">
               <div>
-                <span class="section-index">06 · CONTROLLED WRITE-BACK</span>
-                <h2 id="writeback-heading">Record in DataHub</h2>
-                <p>Preview a root-asset documentation patch, then confirm it separately. Analysis and preview never mutate DataHub.</p>
+                <span class="section-index">Controlled write-back</span>
+                <h2 id="writeback-heading">DataHub record</h2>
+                <p>Preview and explicitly confirm a documentation-only patch for the reviewed root dataset.</p>
               </div>
               <span class="writeback-status" id="writeback-status" data-state="checking">Checking configuration</span>
             </div>
 
+            <dl class="writeback-safety-summary" aria-label="Write-back safety boundary">
+              <div><dt>Mutation mode</dt><dd id="writeback-mode-state">Checking configuration</dd></div>
+              <div><dt>Modified scope</dt><dd>Reviewed root dataset only</dd></div>
+              <div><dt>Target aspect</dt><dd><code>editableDatasetProperties.description</code></dd></div>
+            </dl>
+
             <div class="writeback-intro" id="writeback-intro">
               <div>
-                <strong>Review metadata only</strong>
+                <strong id="writeback-state-title">Preview unavailable</strong>
                 <p id="writeback-availability">Write-back availability will appear after the provider check.</p>
               </div>
               <button class="button button-secondary" id="preview-writeback" type="button">
@@ -502,32 +802,46 @@
             <div class="writeback-feedback is-hidden" id="writeback-feedback" role="status" aria-live="polite"></div>
 
             <div class="writeback-preview is-hidden" id="writeback-preview">
-              <div class="writeback-summary-grid">
-                <div><span>Root asset</span><strong id="writeback-target">—</strong><small id="writeback-target-urn"></small></div>
-                <div><span>Operation</span><strong>Patch editable description</strong></div>
-                <div><span>Decision</span><strong id="writeback-decision">—</strong></div>
-                <div><span>Risk</span><strong id="writeback-risk">—</strong></div>
-              </div>
+              <header class="writeback-preview-heading">
+                <h3>Exact patch preview</h3>
+                <p>This preview is read-only and does not modify DataHub.</p>
+              </header>
+
+              <dl class="writeback-target-ledger">
+                <div><dt>Root asset</dt><dd><strong id="writeback-target">—</strong><code id="writeback-target-urn"></code></dd></div>
+                <div><dt>Analysis ID</dt><dd><code id="writeback-analysis-id">—</code></dd></div>
+                <div><dt>Target aspect</dt><dd><code>editableDatasetProperties.description</code></dd></div>
+                <div><dt>Existing documentation</dt><dd id="writeback-preservation">Preserved around the managed block</dd></div>
+                <div><dt>Decision</dt><dd id="writeback-decision">—</dd></div>
+                <div><dt>Risk</dt><dd id="writeback-risk">—</dd></div>
+                <div><dt>Idempotency</dt><dd id="writeback-idempotency">New record</dd></div>
+              </dl>
 
               <div class="mutation-code">
                 <div class="mutation-code-header">
-                  <span><strong>editableDatasetProperties.description</strong> · managed section</span>
-                  <span id="writeback-idempotency">New record</span>
+                  <span><strong>Managed LineageShield block</strong></span>
+                  <span>Exact content</span>
                 </div>
                 <pre tabindex="0"><code id="writeback-managed-section"></code></pre>
               </div>
 
-              <details class="resulting-description">
-                <summary>Inspect the complete resulting description</summary>
+              <details class="resulting-description" id="writeback-resulting-details">
+                <summary>Full resulting description</summary>
                 <pre tabindex="0"><code id="writeback-resulting-description"></code></pre>
               </details>
 
               <ul class="writeback-warnings" id="writeback-warnings"></ul>
 
+              <p class="writeback-no-execution"><strong>No migration SQL was executed.</strong> No downstream assets will be modified.</p>
+
               <div class="writeback-confirmation">
+                <div>
+                  <h3>Confirmation required</h3>
+                  <p>Confirm the exact managed block before the Apply action can become available.</p>
+                </div>
                 <label for="writeback-confirm">
                   <input id="writeback-confirm" type="checkbox" />
-                  <span>I reviewed this exact metadata patch and understand that it records the investigation only; it does not execute migration SQL.</span>
+                  <span>I reviewed this exact root-only metadata patch and understand that it records the investigation only; it does not execute migration SQL.</span>
                 </label>
                 <button class="button button-primary" id="apply-writeback" type="button" disabled>
                   Apply to root asset
@@ -542,7 +856,7 @@
                 </svg>
               </div>
               <div>
-                <span>DATAHUB RECEIPT</span>
+                <span>Structured DataHub receipt</span>
                 <h3 id="receipt-title">Record confirmed</h3>
                 <dl>
                   <dt>Analysis</dt><dd id="receipt-analysis">—</dd>
