@@ -60,6 +60,7 @@ const PROGRESS_LABELS = [
 const byId = id => document.getElementById(id);
 
 const elements = {
+  shell: byId("main-content"),
   form: byId("change-form"),
   assetUrn: byId("asset-urn"),
   column: byId("column"),
@@ -88,7 +89,30 @@ const elements = {
   connectionDetail: byId("connection-detail"),
   providerLabel: byId("provider-label"),
   retryHealth: byId("retry-health"),
-  decisionPanel: byId("decision-panel"),
+  headerChange: byId("header-change"),
+  headerRootAsset: byId("header-root-asset"),
+  headerChangeDetail: byId("header-change-detail"),
+  headerMutationStatus: byId("header-mutation-status"),
+  downloadJson: byId("download-json"),
+  reviewSpine: byId("review-spine"),
+  reviewSpineToggle: byId("review-spine-toggle"),
+  reviewSpineToggleSummary: byId("review-spine-toggle-summary"),
+  reviewSpineDetails: byId("review-spine-details"),
+  reviewSpineTitle: byId("review-spine-title"),
+  reviewSpinePlatform: byId("review-spine-platform"),
+  reviewDiffBefore: byId("review-diff-before"),
+  reviewDiffAfter: byId("review-diff-after"),
+  reviewChangeType: byId("review-change-type"),
+  reviewChangeReason: byId("review-change-reason"),
+  reviewViewSelect: byId("review-view-select"),
+  reviewTabs: [...document.querySelectorAll(".review-tab")],
+  reviewPanels: [...document.querySelectorAll(".review-panel")],
+  reviewCountLineage: byId("review-count-lineage"),
+  reviewCountAssets: byId("review-count-assets"),
+  reviewCountRisk: byId("review-count-risk"),
+  reviewCountAgent: byId("review-count-agent"),
+  reviewCountSafeguards: byId("review-count-safeguards"),
+  decisionPanel: byId("review-panel-overview"),
   decision: byId("decision"),
   riskLevel: byId("risk-level"),
   explanation: byId("explanation"),
@@ -99,6 +123,13 @@ const elements = {
   platformSummary: byId("platform-summary"),
   approvalMetric: byId("approval-metric"),
   approvalSummary: byId("approval-summary"),
+  metadataMetric: byId("metadata-metric"),
+  overviewRawScore: byId("overview-raw-score"),
+  overviewFactors: byId("overview-factors"),
+  overviewQualityEvidence: byId("overview-quality-evidence"),
+  overviewDatahubAuthority: byId("overview-datahub-authority"),
+  overviewCalculationAuthority: byId("overview-calculation-authority"),
+  overviewAgentAuthority: byId("overview-agent-authority"),
   agentStatus: byId("agent-status"),
   agentEvidenceCount: byId("agent-evidence-count"),
   agentAuthoritativeResult: byId("agent-authoritative-result"),
@@ -163,6 +194,8 @@ const state = {
   result: null,
   lastPayload: null,
   selectedAsset: null,
+  reviewView: "overview",
+  proposalExpanded: false,
   artifactTab: "migration",
   provider: null,
   mutationsEnabled: false,
@@ -177,6 +210,49 @@ function setView(view) {
   elements.loadingState.classList.toggle("is-hidden", view !== "loading");
   elements.errorState.classList.toggle("is-hidden", view !== "error");
   elements.resultView.classList.toggle("is-hidden", view !== "result");
+  elements.form.classList.toggle("is-hidden", view === "result");
+  elements.reviewSpine.classList.toggle("is-hidden", view !== "result");
+  elements.headerChange.classList.toggle("is-hidden", view !== "result");
+  elements.downloadJson.disabled = view !== "result";
+  elements.shell.dataset.viewState = view;
+}
+
+function sentenceCase(value) {
+  const text = String(value || "").toLowerCase();
+  return text ? `${text[0].toUpperCase()}${text.slice(1)}` : "";
+}
+
+function decisionLabel(decision) {
+  return {
+    ALLOW: "Merge allowed",
+    REVIEW: "Review required",
+    BLOCK: "Merge blocked"
+  }[decision] || "Decision unavailable";
+}
+
+function changeTypeLabel(changeType) {
+  return {
+    rename: "Rename column",
+    type_change: "Change data type",
+    add: "Add column",
+    drop: "Drop column"
+  }[changeType] || "Schema change";
+}
+
+function schemaDiff(payload) {
+  const column = payload?.column || "Column unavailable";
+  const newValue = payload?.new_value || "Removed";
+
+  if (payload?.change_type === "add") {
+    return {before: "Not present", after: `${column} · ${newValue}`};
+  }
+  if (payload?.change_type === "type_change") {
+    return {before: column, after: `${column} · ${newValue}`};
+  }
+  if (payload?.change_type === "drop") {
+    return {before: column, after: "Removed"};
+  }
+  return {before: column, after: newValue};
 }
 
 function appendTextWithSuffix(container, value, suffix) {
@@ -362,6 +438,78 @@ function payloadFromForm() {
   };
 }
 
+function updateReviewSpineExpansion() {
+  elements.reviewSpine.classList.toggle("is-proposal-expanded", state.proposalExpanded);
+  elements.reviewSpineToggle.setAttribute("aria-expanded", String(state.proposalExpanded));
+}
+
+function selectReviewView(view, {focusTab = false} = {}) {
+  const tab = elements.reviewTabs.find(item => item.dataset.reviewView === view);
+  const panel = elements.reviewPanels.find(item => item.dataset.reviewView === view);
+  if (!tab || !panel) return;
+
+  state.reviewView = view;
+  elements.reviewTabs.forEach(item => {
+    const active = item === tab;
+    item.classList.toggle("is-active", active);
+    item.setAttribute("aria-selected", String(active));
+    item.tabIndex = active ? 0 : -1;
+  });
+  elements.reviewPanels.forEach(item => {
+    item.hidden = item !== panel;
+  });
+  elements.reviewViewSelect.value = view;
+  if (focusTab) tab.focus({preventScroll: true});
+}
+
+function updateReviewSelectOption(view, label, count = null) {
+  const option = [...elements.reviewViewSelect.options]
+    .find(item => item.value === view);
+  if (!option) return;
+  option.textContent = count === null ? label : `${label} · ${count}`;
+}
+
+function renderReviewWorkspace(result) {
+  const rootAsset = normalizeRootAsset(result);
+  const payload = state.lastPayload || {};
+  const diff = schemaDiff(payload);
+  const trace = result.agent_trace || {};
+  const executionCount = Array.isArray(trace.executions) ? trace.executions.length : 0;
+  const affectedCount = result.affected_assets.length;
+  const factorCount = result.factors.length;
+  const safeguardCount = Object.keys(result.artifacts || {}).length;
+
+  elements.headerRootAsset.textContent = rootAsset.name || readableNameFromUrn(rootAsset.urn);
+  elements.headerChangeDetail.textContent = payload.change_type === "rename"
+    ? `${payload.column || "Column"} → ${payload.new_value || "New name"}`
+    : `${changeTypeLabel(payload.change_type)} · ${payload.column || "Column"}`;
+
+  elements.reviewSpineTitle.textContent = rootAsset.name || readableNameFromUrn(rootAsset.urn);
+  elements.reviewSpinePlatform.textContent = `${rootAsset.platform || "Unknown platform"} · ${assetTypeLabel(rootAsset.asset_type)}`;
+  elements.reviewDiffBefore.textContent = diff.before;
+  elements.reviewDiffAfter.textContent = diff.after;
+  elements.reviewChangeType.textContent = changeTypeLabel(payload.change_type);
+  elements.reviewChangeReason.textContent = payload.reason || "No rationale provided.";
+  elements.reviewSpineToggleSummary.textContent = payload.change_type === "rename"
+    ? `${diff.before} → ${diff.after}`
+    : `${changeTypeLabel(payload.change_type)} · ${payload.column || "Column"}`;
+
+  elements.reviewCountLineage.textContent = String(affectedCount);
+  elements.reviewCountAssets.textContent = String(affectedCount);
+  elements.reviewCountRisk.textContent = String(factorCount);
+  elements.reviewCountAgent.textContent = String(executionCount);
+  elements.reviewCountSafeguards.textContent = String(safeguardCount);
+  updateReviewSelectOption("lineage", "Lineage", affectedCount);
+  updateReviewSelectOption("assets", "Affected assets", affectedCount);
+  updateReviewSelectOption("risk", "Risk evidence", factorCount);
+  updateReviewSelectOption("agent", "Agent Context", executionCount);
+  updateReviewSelectOption("safeguards", "Safeguards", safeguardCount);
+
+  state.proposalExpanded = false;
+  updateReviewSpineExpansion();
+  selectReviewView("overview");
+}
+
 async function runInvestigation(payload) {
   state.lastPayload = payload;
   elements.analyzeButton.disabled = true;
@@ -373,7 +521,7 @@ async function runInvestigation(payload) {
     stopProgress();
     renderResult(result);
     setView("result");
-    elements.decisionPanel.scrollIntoView({behavior: "smooth", block: "start"});
+    elements.decisionPanel.focus({preventScroll: true});
   } catch (error) {
     stopProgress();
     elements.errorTitle.textContent = error.status === 503
@@ -414,10 +562,13 @@ function renderDecision(result) {
   const platforms = [...new Set(result.affected_assets.map(asset => asset.platform).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
   const approvals = result.required_approvals || [];
+  const metadataSummary = result.metadata_summary || {};
+  const enriched = Number(metadataSummary.datahub_entities_enriched || 0);
+  const totalMetadataAssets = Number(metadataSummary.total_assets || 0);
 
   elements.decisionPanel.dataset.decision = result.decision;
-  elements.decision.textContent = result.decision;
-  elements.riskLevel.textContent = `${result.risk_level} RISK`;
+  elements.decision.textContent = decisionLabel(result.decision);
+  elements.riskLevel.textContent = `${sentenceCase(result.risk_level)} risk`;
   elements.explanation.textContent = result.explanation;
   appendTextWithSuffix(elements.riskScore, result.risk_score, "/100");
   elements.scoreMeterFill.style.width = `${Math.min(100, result.risk_score)}%`;
@@ -425,7 +576,9 @@ function renderDecision(result) {
   elements.platformMetric.textContent = String(platforms.length);
   elements.platformSummary.textContent = displayPlatformList(platforms);
   elements.approvalMetric.textContent = String(approvals.length);
-  const metadataSummary = result.metadata_summary || {};
+  elements.metadataMetric.textContent = totalMetadataAssets
+    ? `${enriched}/${totalMetadataAssets}`
+    : "Unavailable";
   elements.approvalSummary.textContent = approvals.length
     ? `${approvals.length} owner${approvals.length === 1 ? "" : "s"} identified`
     : (result.provider === "datahub"
@@ -435,6 +588,52 @@ function renderDecision(result) {
           : "No owners returned by DataHub")
         : "Owner metadata unavailable")
       : "No owner approval required");
+}
+
+function renderOverview(result) {
+  const rawScore = result.raw_risk_score
+    ?? result.factors.reduce((sum, factor) => sum + factor.points, 0);
+  const factorRows = result.factors.map(factor => {
+    const row = document.createElement("article");
+    row.className = "overview-factor-row";
+    const points = document.createElement("strong");
+    points.textContent = `+${factor.points}`;
+    const copy = document.createElement("span");
+    const label = document.createElement("b");
+    label.textContent = factor.label;
+    const evidence = document.createElement("small");
+    evidence.textContent = factor.evidence;
+    copy.append(label, evidence);
+    row.append(points, copy);
+    return row;
+  });
+  elements.overviewRawScore.textContent = `${rawScore} point${rawScore === 1 ? "" : "s"}`;
+  elements.overviewFactors.replaceChildren(...factorRows);
+
+  const rootAsset = normalizeRootAsset(result);
+  const qualityFailure = [rootAsset, ...result.affected_assets].find(asset =>
+    asset.quality_status === "failing"
+      && asset.metadata_sources?.quality === "datahub"
+  );
+  elements.overviewQualityEvidence.textContent = qualityFailure
+    ? `${qualityFailure.name || readableNameFromUrn(qualityFailure.urn)} — ${qualityFailure.quality_evidence || "DataHub reports a failing quality test."}`
+    : "No identifiable failing DataHub quality evidence returned.";
+  elements.overviewQualityEvidence.dataset.state = qualityFailure ? "failing" : "none";
+
+  const metadataSummary = result.metadata_summary || {};
+  const enriched = Number(metadataSummary.datahub_entities_enriched || 0);
+  const totalMetadataAssets = Number(metadataSummary.total_assets || 0);
+  elements.overviewDatahubAuthority.textContent = result.provider === "datahub"
+    ? `${result.affected_assets.length} downstream assets · ${totalMetadataAssets ? `${enriched}/${totalMetadataAssets} entities enriched` : "metadata coverage unavailable"}`
+    : `Unavailable — analysis used the ${result.provider || "unknown"} provider`;
+  elements.overviewCalculationAuthority.textContent = `${result.decision} · ${result.risk_score}/100 · deterministic and authoritative`;
+
+  const trace = result.agent_trace || {};
+  const requested = Array.isArray(trace.tools_requested) ? trace.tools_requested.length : 0;
+  const succeeded = Array.isArray(trace.tools_succeeded) ? trace.tools_succeeded.length : 0;
+  elements.overviewAgentAuthority.textContent = trace.executed
+    ? `${agentStatusLabel(trace.status)} · ${succeeded}/${requested} read operations · supplemental`
+    : "Unavailable · supplemental only";
 }
 
 function agentStatusLabel(status) {
@@ -596,7 +795,7 @@ function inspectAsset(asset) {
   });
   const structuredPropertyCount = Object.keys(asset.structured_properties || {}).length;
 
-  elements.inspectorType.textContent = `${isSource ? "SOURCE · " : ""}${assetTypeLabel(asset.asset_type).toUpperCase()}`;
+  elements.inspectorType.textContent = `${isSource ? "Source · " : ""}${assetTypeLabel(asset.asset_type)}`;
   elements.inspectorTitle.textContent = asset.name || readableNameFromUrn(asset.urn);
   elements.inspectorDescription.textContent = asset.description || (isSource
     ? "The proposed column change originates from this asset."
@@ -859,12 +1058,14 @@ function renderResult(result) {
   state.artifactTab = "migration";
   resetWriteback();
   renderDecision(result);
+  renderOverview(result);
   renderAgentInvestigation(result);
   renderLineageSection(result);
   populatePlatformFilter(result.affected_assets);
   renderAssetList();
   renderRisk(result);
   selectArtifactTab(byId("tab-migration"));
+  renderReviewWorkspace(result);
 }
 
 function renderWritebackAvailability({connectionFailed = false} = {}) {
@@ -891,6 +1092,13 @@ function renderWritebackAvailability({connectionFailed = false} = {}) {
   elements.writebackStatus.dataset.state = status;
   elements.writebackStatus.textContent = label;
   elements.writebackAvailability.textContent = message;
+  elements.headerMutationStatus.dataset.state = status;
+  elements.headerMutationStatus.textContent = status === "enabled"
+    ? "Mutations on"
+    : (status === "unavailable" || status === "unsupported"
+      ? "Write-back unavailable"
+      : "Mutations off");
+  elements.headerMutationStatus.title = message;
   elements.previewWriteback.disabled = !state.result || !datahubAnalysis || connectionFailed;
   updateApplyAvailability();
 }
@@ -961,6 +1169,11 @@ function renderWritebackReceipt(receipt) {
   elements.writebackReceipt.classList.remove("is-hidden");
 }
 
+function editProposal() {
+  setView("empty");
+  elements.assetUrn.focus();
+}
+
 elements.form.addEventListener("submit", event => {
   event.preventDefault();
   if (validateForm()) runInvestigation(payloadFromForm());
@@ -972,9 +1185,31 @@ elements.retryHealth.addEventListener("click", updateConnectionStatus);
 byId("retry-analysis").addEventListener("click", () => {
   if (state.lastPayload) runInvestigation(state.lastPayload);
 });
-byId("edit-proposal").addEventListener("click", () => {
-  setView("empty");
-  elements.assetUrn.focus();
+byId("edit-proposal").addEventListener("click", editProposal);
+byId("edit-review-proposal").addEventListener("click", editProposal);
+
+elements.reviewSpineToggle.addEventListener("click", () => {
+  state.proposalExpanded = !state.proposalExpanded;
+  updateReviewSpineExpansion();
+});
+
+elements.reviewViewSelect.addEventListener("change", () => {
+  selectReviewView(elements.reviewViewSelect.value);
+});
+
+elements.reviewTabs.forEach(button => {
+  button.addEventListener("click", () => selectReviewView(button.dataset.reviewView));
+  button.addEventListener("keydown", event => {
+    if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const index = elements.reviewTabs.indexOf(button);
+    let target = index;
+    if (event.key === "ArrowUp") target = (index - 1 + elements.reviewTabs.length) % elements.reviewTabs.length;
+    if (event.key === "ArrowDown") target = (index + 1) % elements.reviewTabs.length;
+    if (event.key === "Home") target = 0;
+    if (event.key === "End") target = elements.reviewTabs.length - 1;
+    selectReviewView(elements.reviewTabs[target].dataset.reviewView, {focusTab: true});
+  });
 });
 
 [elements.assetUrn, elements.column, elements.newValue].forEach(input => {
@@ -1096,4 +1331,5 @@ elements.applyWriteback.addEventListener("click", async () => {
 
 loadSample({announce: false});
 updateChangeType();
+setView("empty");
 updateConnectionStatus();
