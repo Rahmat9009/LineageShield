@@ -16,6 +16,14 @@ MetadataSource = Literal[
 ]
 MetadataValue = str | int | float | bool
 
+AgentTraceStatus = Literal["completed", "degraded", "unavailable"]
+AgentToolStatus = Literal["success", "failure", "timeout"]
+AgentNarrativeSource = Literal[
+    "deterministic_orchestration",
+    "optional_model",
+    "unavailable",
+]
+
 
 class ChangeRequest(BaseModel):
     asset_urn: str = Field(min_length=3, max_length=1_000)
@@ -137,6 +145,61 @@ class GeneratedArtifacts(BaseModel):
     pull_request_summary: str
 
 
+class AgentToolFailure(BaseModel):
+    tool: str
+    operation: str
+    error_type: str
+    message: str
+    timed_out: bool = False
+
+
+class AgentToolExecution(BaseModel):
+    tool: str
+    operation: str
+    status: AgentToolStatus
+    duration_ms: int = Field(default=0, ge=0)
+    result_summary: str
+    evidence_references: list[str] = Field(default_factory=list)
+
+
+class AgentEvidenceReference(BaseModel):
+    urn: str
+    label: str
+    evidence_type: Literal[
+        "root_entity",
+        "column_lineage",
+        "dataset_lineage",
+    ]
+    source: Literal["datahub_agent_context"] = "datahub_agent_context"
+
+
+class AgentInvestigationTrace(BaseModel):
+    """Sanitized audit trace for the read-only Agent Context Kit workflow."""
+
+    status: AgentTraceStatus = "unavailable"
+    executed: bool = False
+    toolkit: Literal["datahub-agent-context"] = "datahub-agent-context"
+    toolkit_version: str | None = None
+    mode: Literal["deterministic_read_only"] = "deterministic_read_only"
+    llm_used: Literal[False] = False
+    narrative_source: AgentNarrativeSource = "unavailable"
+    tools_requested: list[str] = Field(default_factory=list)
+    tools_succeeded: list[str] = Field(default_factory=list)
+    tool_failures: list[AgentToolFailure] = Field(default_factory=list)
+    executions: list[AgentToolExecution] = Field(default_factory=list)
+    fallback_occurred: bool = False
+    fallback_reason: str | None = None
+    duration_ms: int = Field(default=0, ge=0)
+    context_evidence_references: list[AgentEvidenceReference] = Field(
+        default_factory=list
+    )
+    narrative: str = (
+        "Agent Context Kit did not execute; deterministic LineageShield analysis "
+        "remained available."
+    )
+    limitations: list[str] = Field(default_factory=list)
+
+
 class AnalysisResult(BaseModel):
     analysis_id: str
     provider: str
@@ -154,6 +217,9 @@ class AnalysisResult(BaseModel):
     glossary_terms: list[str] = Field(default_factory=list)
     metadata_summary: MetadataSummary = Field(default_factory=MetadataSummary)
     context_notes: list[str] = Field(default_factory=list)
+    agent_trace: AgentInvestigationTrace = Field(
+        default_factory=AgentInvestigationTrace
+    )
 
 
 class WritebackTarget(BaseModel):

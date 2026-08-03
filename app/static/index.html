@@ -205,7 +205,8 @@
             <li data-stage="1"><span></span>Traversing downstream lineage</li>
             <li data-stage="2"><span></span>Classifying affected assets</li>
             <li data-stage="3"><span></span>Calculating deterministic risk</li>
-            <li data-stage="4"><span></span>Generating safeguards</li>
+            <li data-stage="4"><span></span>Running Agent Context tools</li>
+            <li data-stage="5"><span></span>Generating safeguards</li>
           </ol>
         </section>
 
@@ -276,10 +277,64 @@
             </div>
           </section>
 
+          <section class="panel content-panel agent-panel" aria-labelledby="agent-heading">
+            <div class="section-heading section-heading-inline">
+              <div>
+                <span class="section-index">01 · AGENT CONTEXT</span>
+                <h2 id="agent-heading">Agent investigation</h2>
+                <p>Read-only DataHub context operations are audited separately from the authoritative LineageShield calculation.</p>
+              </div>
+              <span class="agent-status" id="agent-status" data-state="unavailable">Unavailable</span>
+            </div>
+
+            <div class="provenance-grid" aria-label="Investigation provenance">
+              <article>
+                <span>DataHub-retrieved evidence</span>
+                <strong id="agent-evidence-count">0 references</strong>
+                <small>Agent Context Kit read tools</small>
+              </article>
+              <article>
+                <span>LineageShield calculation</span>
+                <strong id="agent-authoritative-result">—</strong>
+                <small>Deterministic and authoritative</small>
+              </article>
+              <article>
+                <span>Agent narrative</span>
+                <strong id="agent-narrative-source">Unavailable</strong>
+                <small id="agent-model-state">No model called</small>
+              </article>
+            </div>
+
+            <div class="agent-summary">
+              <div>
+                <span class="agent-narrative-label">CONTEXT NARRATIVE</span>
+                <p id="agent-narrative">Agent Context Kit did not execute for this investigation.</p>
+              </div>
+              <dl class="agent-metrics">
+                <div><dt>Toolkit</dt><dd id="agent-toolkit">datahub-agent-context</dd></div>
+                <div><dt>Duration</dt><dd id="agent-duration">0 ms</dd></div>
+                <div><dt>Fallback</dt><dd id="agent-fallback">Not used</dd></div>
+              </dl>
+            </div>
+
+            <div class="agent-trace">
+              <div class="agent-trace-heading">
+                <h3>Tool execution trace</h3>
+                <span id="agent-tool-summary">0 requested · 0 succeeded</span>
+              </div>
+              <ol id="agent-executions" class="agent-executions"></ol>
+              <p id="agent-fallback-reason" class="agent-fallback-reason is-hidden"></p>
+              <details class="agent-evidence-details">
+                <summary>Inspect context evidence references</summary>
+                <ul id="agent-evidence-references"></ul>
+              </details>
+            </div>
+          </section>
+
           <section class="panel content-panel" aria-labelledby="lineage-heading">
             <div class="section-heading">
               <div>
-                <span class="section-index">01 · LIVE EVIDENCE</span>
+                <span class="section-index">02 · LIVE EVIDENCE</span>
                 <h2 id="lineage-heading">Lineage blast radius</h2>
                 <p>Every node is derived from the provider response. Select one to inspect its metadata.</p>
               </div>
@@ -311,7 +366,7 @@
           <section class="panel content-panel" aria-labelledby="assets-heading">
             <div class="section-heading section-heading-inline">
               <div>
-                <span class="section-index">02 · AFFECTED ASSETS</span>
+                <span class="section-index">03 · AFFECTED ASSETS</span>
                 <h2 id="assets-heading">Dependency explorer</h2>
               </div>
               <strong class="result-count" id="asset-count">0 results</strong>
@@ -368,7 +423,7 @@
           <section class="panel content-panel" aria-labelledby="risk-heading">
             <div class="section-heading">
               <div>
-                <span class="section-index">03 · DETERMINISTIC ANALYSIS</span>
+                <span class="section-index">04 · DETERMINISTIC ANALYSIS</span>
                 <h2 id="risk-heading">Risk evidence</h2>
                 <p>Each factor is produced by fixed scoring rules. Recommendations cannot alter this decision.</p>
               </div>
@@ -392,7 +447,7 @@
           <section class="panel content-panel" aria-labelledby="safeguards-heading">
             <div class="section-heading section-heading-inline">
               <div>
-                <span class="section-index">04 · GENERATED RECOMMENDATIONS</span>
+                <span class="section-index">05 · GENERATED RECOMMENDATIONS</span>
                 <h2 id="safeguards-heading">Migration safeguards</h2>
                 <p>Review and adapt these artifacts before applying them to a repository or warehouse.</p>
               </div>
@@ -427,7 +482,7 @@
           <section class="panel content-panel writeback-panel" aria-labelledby="writeback-heading">
             <div class="section-heading section-heading-inline">
               <div>
-                <span class="section-index">05 · CONTROLLED WRITE-BACK</span>
+                <span class="section-index">06 · CONTROLLED WRITE-BACK</span>
                 <h2 id="writeback-heading">Record in DataHub</h2>
                 <p>Preview a root-asset documentation patch, then confirm it separately. Analysis and preview never mutate DataHub.</p>
               </div>

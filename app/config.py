@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     )
     datahub_enrichment_concurrency: int = Field(default=4, ge=1, le=12)
     datahub_enrichment_batch_size: int = Field(default=50, ge=1, le=100)
+    agent_context_timeout_seconds: float = Field(default=24.0, gt=0, le=60)
+    agent_context_tool_timeout_seconds: float = Field(default=10.0, gt=0, le=30)
+    agent_context_max_lineage_results: int = Field(default=60, ge=1, le=100)
 
     model_config = SettingsConfigDict(
         env_file=".env",

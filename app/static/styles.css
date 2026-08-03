@@ -1098,6 +1098,291 @@ textarea[aria-invalid="true"] {
   font-size: 0.73rem;
 }
 
+/* Read-only Agent Context trace */
+.agent-panel {
+  border-color: var(--border-strong);
+}
+
+.agent-status {
+  min-width: max-content;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted-strong);
+  background: var(--surface-inset);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+}
+
+.agent-status[data-state="completed"] {
+  border-color: rgba(67, 212, 158, 0.35);
+  color: var(--low-text);
+  background: var(--accent-muted);
+}
+
+.agent-status[data-state="degraded"] {
+  border-color: rgba(240, 185, 84, 0.38);
+  color: var(--medium-text);
+  background: var(--warning-muted);
+}
+
+.agent-status[data-state="unavailable"] {
+  border-color: rgba(255, 116, 124, 0.3);
+  color: var(--critical-text);
+  background: var(--danger-muted);
+}
+
+.provenance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+}
+
+.provenance-grid article {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--border);
+}
+
+.provenance-grid article:last-child {
+  border-right: 0;
+}
+
+.provenance-grid span,
+.provenance-grid small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.provenance-grid strong {
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.agent-narrative-label {
+  color: var(--info);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.agent-summary p {
+  max-width: 760px;
+  margin: 6px 0 0;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.agent-metrics {
+  display: grid;
+  gap: 8px;
+  min-width: 210px;
+  margin: 0;
+}
+
+.agent-metrics div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.agent-metrics dt,
+.agent-metrics dd {
+  margin: 0;
+  font-size: 0.67rem;
+}
+
+.agent-metrics dt {
+  color: var(--muted);
+}
+
+.agent-metrics dd {
+  color: var(--muted-strong);
+  text-align: right;
+}
+
+.agent-trace {
+  margin-top: 18px;
+}
+
+.agent-trace-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.agent-trace-heading h3 {
+  margin-bottom: 9px;
+  font-size: 0.82rem;
+}
+
+.agent-trace-heading span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+
+.agent-executions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-execution {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+}
+
+.agent-execution > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-execution strong {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-execution > div span {
+  color: var(--low-text);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.agent-execution[data-state="failure"] > div span,
+.agent-execution[data-state="timeout"] > div span {
+  color: var(--critical-text);
+}
+
+.agent-execution p {
+  min-height: 42px;
+  margin: 8px 0;
+  color: var(--text-soft);
+  font-size: 0.7rem;
+}
+
+.agent-execution small {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.agent-execution.is-empty {
+  grid-column: 1 / -1;
+  min-height: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.agent-fallback-reason {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 2px solid var(--warning);
+  color: var(--warning-text);
+  background: var(--warning-muted);
+  font-size: 0.7rem;
+}
+
+.agent-evidence-details {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.agent-evidence-details summary {
+  padding: 12px 0 4px;
+  color: var(--muted-strong);
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.agent-evidence-details ul {
+  display: grid;
+  gap: 7px;
+  max-height: 290px;
+  margin: 8px 0 0;
+  padding: 0 4px 0 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.agent-evidence-details li {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.35fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-inset);
+}
+
+.agent-evidence-details li > span {
+  display: grid;
+  min-width: 0;
+}
+
+.agent-evidence-details strong,
+.agent-evidence-details small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-evidence-details strong {
+  color: var(--text-soft);
+  font-size: 0.69rem;
+}
+
+.agent-evidence-details small {
+  color: var(--muted);
+  font-size: 0.61rem;
+}
+
+.agent-evidence-details code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--code-text);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+}
+
+.agent-evidence-details .agent-evidence-empty {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
 /* Lineage */
 .lineage-legend {
   display: flex;
@@ -2048,6 +2333,14 @@ textarea[aria-invalid="true"] {
   .node-inspector {
     min-height: 220px;
   }
+
+  .agent-executions {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-execution p {
+    min-height: 0;
+  }
 }
 
 @media (max-width: 760px) {
@@ -2105,6 +2398,27 @@ textarea[aria-invalid="true"] {
   .lineage-legend,
   .approval-list {
     justify-content: flex-start;
+  }
+
+  .provenance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .provenance-grid article {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .provenance-grid article:last-child {
+    border-bottom: 0;
+  }
+
+  .agent-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-metrics {
+    min-width: 0;
   }
 
   .filter-bar {
@@ -2188,6 +2502,10 @@ textarea[aria-invalid="true"] {
   .metric-card {
     border-right: 0;
     border-bottom: 1px solid var(--border);
+  }
+
+  .agent-evidence-details li {
+    grid-template-columns: 1fr;
   }
 
   .metric-card:last-child {

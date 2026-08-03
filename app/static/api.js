@@ -79,7 +79,7 @@ export function analyzeChange(payload) {
   return requestJson("/api/analyze", {
     method: "POST",
     body: JSON.stringify(payload),
-    timeoutMs: 45_000
+    timeoutMs: 80_000
   });
 }
 

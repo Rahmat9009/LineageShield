@@ -23,6 +23,7 @@ from app.services.analysis_store import (
     AnalysisStore,
     StoredAnalysis,
 )
+from app.services.agent_context import AgentContextService
 from app.services.change_impact import ChangeImpactService
 from app.services.datahub_writeback import (
     DataHubWritebackService,
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 app = FastAPI(
     title="LineageShield API",
-    version="0.3.0",
+    version="0.4.0",
     description="Metadata-aware schema-change impact analysis.",
 )
 
@@ -54,7 +55,15 @@ def build_service() -> ChangeImpactService:
             enrichment_concurrency=settings.datahub_enrichment_concurrency,
             enrichment_batch_size=settings.datahub_enrichment_batch_size,
         )
-        return ChangeImpactService(provider)
+        return ChangeImpactService(
+            provider,
+            agent_investigator=AgentContextService(
+                client_factory=provider.get_client,
+                total_timeout_seconds=settings.agent_context_timeout_seconds,
+                tool_timeout_seconds=settings.agent_context_tool_timeout_seconds,
+                max_lineage_results=settings.agent_context_max_lineage_results,
+            ),
+        )
     return ChangeImpactService(DemoContextProvider())
 
 

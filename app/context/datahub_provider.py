@@ -559,6 +559,11 @@ class DataHubContextProvider(ContextProvider):
         self._client = DataHubClient.from_env()
         return self._client
 
+    def get_client(self) -> Any:
+        """Return the configured SDK client for isolated read-only integrations."""
+
+        return self._get_client()
+
     def _test_connection(self) -> None:
         client = self._get_client()
         test_connection = getattr(client, "test_connection", None)

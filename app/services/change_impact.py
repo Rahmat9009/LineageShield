@@ -1,13 +1,29 @@
-from typing import Literal
+import logging
+from typing import Literal, Protocol
 from uuid import uuid4
 
 from app.context.base import ContextProvider
-from app.models import AnalysisResult, ChangeRequest, Decision
+from app.models import (
+    AgentInvestigationTrace,
+    AnalysisResult,
+    ChangeRequest,
+    ContextGraph,
+    Decision,
+)
 from app.services.artifact_generator import ArtifactGenerator
 from app.services.risk_engine import RiskEngine
 
 
 RiskLevel = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+logger = logging.getLogger(__name__)
+
+
+class AgentInvestigator(Protocol):
+    async def investigate(
+        self,
+        request: ChangeRequest,
+        context: ContextGraph,
+    ) -> AgentInvestigationTrace: ...
 
 
 class ChangeImpactService:
@@ -15,8 +31,14 @@ class ChangeImpactService:
     BLOCK_THRESHOLD = 50
     CRITICAL_THRESHOLD = 75
 
-    def __init__(self, provider: ContextProvider) -> None:
+    def __init__(
+        self,
+        provider: ContextProvider,
+        *,
+        agent_investigator: AgentInvestigator | None = None,
+    ) -> None:
         self.provider = provider
+        self.agent_investigator = agent_investigator
         self.risk_engine = RiskEngine()
         self.artifact_generator = ArtifactGenerator()
 
@@ -35,6 +57,7 @@ class ChangeImpactService:
         score, factors, affected = self.risk_engine.evaluate(request, context)
         raw_score = sum(factor.points for factor in factors)
         decision, risk_level = self.classify_score(score)
+        agent_trace = await self._agent_trace(request, context)
 
         approvals = sorted(
             {
@@ -96,4 +119,46 @@ class ChangeImpactService:
             glossary_terms=context.glossary_terms,
             metadata_summary=context.metadata_summary,
             context_notes=context.context_notes,
+            agent_trace=agent_trace,
         )
+
+    async def _agent_trace(
+        self,
+        request: ChangeRequest,
+        context: ContextGraph,
+    ) -> AgentInvestigationTrace:
+        if self.agent_investigator is None:
+            return AgentInvestigationTrace(
+                fallback_occurred=True,
+                fallback_reason=(
+                    "No Agent Context Kit investigator was configured for this "
+                    "provider; deterministic analysis continued."
+                ),
+                limitations=[
+                    "No Agent Context Kit tools were executed for this provider."
+                ],
+            )
+        try:
+            return await self.agent_investigator.investigate(request, context)
+        except Exception as exc:
+            logger.warning(
+                "Agent context investigation failed unexpectedly (%s)",
+                type(exc).__name__,
+            )
+            return AgentInvestigationTrace(
+                status="degraded",
+                executed=True,
+                fallback_occurred=True,
+                fallback_reason=(
+                    "Agent Context Kit failed unexpectedly; deterministic "
+                    "provider evidence remained authoritative."
+                ),
+                narrative_source="unavailable",
+                narrative=(
+                    "Agent Context Kit did not complete. LineageShield preserved "
+                    "the deterministic investigation without using agent output."
+                ),
+                limitations=[
+                    "The unexpected failure type was recorded in server logs without raw values."
+                ],
+            )

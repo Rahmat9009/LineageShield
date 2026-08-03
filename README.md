@@ -2,7 +2,7 @@
 
 **A live DataHub change-review agent that shows who and what a schema change can break before it is merged.**
 
-LineageShield accepts a proposed column rename, type change, addition, or removal. It queries downstream lineage from DataHub, normalizes the affected datasets, pipelines, charts, dashboards, and ML assets, calculates a deterministic risk score, generates practical migration safeguards, and returns an auditable `ALLOW`, `REVIEW`, or `BLOCK` decision.
+LineageShield accepts a proposed column rename, type change, addition, or removal. It queries downstream lineage from DataHub, executes a read-only Agent Context Kit investigation, normalizes the affected datasets, pipelines, charts, dashboards, and ML assets, calculates a deterministic risk score, generates practical migration safeguards, and returns an auditable `ALLOW`, `REVIEW`, or `BLOCK` decision.
 
 The project is built for the **DataHub Agent Hackathon** and is designed for a concise three-minute demonstration.
 
@@ -20,6 +20,7 @@ Live mode uses `DataHubClient.from_env()` to:
 4. Fetch typed entity aspects for the root and downstream datasets, dashboards, charts, data jobs, and supported ML entities in bounded batches.
 5. Resolve referenced users, groups, ownership types, tags, and glossary terms to their DataHub display names while retaining the full URNs.
 6. Return per-field provenance and a metadata coverage summary with the real provider evidence.
+7. Run an independent, read-only Agent Context Kit workflow for root entity context and downstream lineage, with a visible column-to-dataset fallback trace.
 
 Direct metadata can include display name, platform, description, schema fields, owners, tags, glossary terms, structured properties, and identifiable quality test results. Every asset marks values as `datahub`, `lineage`, `inferred`, `fallback`, `unavailable`, or `demo`; inferred criticality is never represented as stored DataHub metadata.
 
@@ -36,6 +37,8 @@ FastAPI routes
   │                       ├── ContextProvider
   │                       │     ├── DataHubContextProvider (live)
   │                       │     └── DemoContextProvider (offline fallback)
+  │                       ├── AgentContextService
+  │                       │     └── DataHubContext + read-only MCP tools
   │                       ├── RiskEngine (deterministic)
   │                       └── ArtifactGenerator (review templates)
   │                              │
@@ -88,6 +91,9 @@ DATAHUB_ENRICHMENT_TIMEOUT_SECONDS=20
 DATAHUB_ENRICHMENT_REQUEST_TIMEOUT_SECONDS=6
 DATAHUB_ENRICHMENT_CONCURRENCY=4
 DATAHUB_ENRICHMENT_BATCH_SIZE=50
+AGENT_CONTEXT_TIMEOUT_SECONDS=24
+AGENT_CONTEXT_TOOL_TIMEOUT_SECONDS=10
+AGENT_CONTEXT_MAX_LINEAGE_RESULTS=60
 ```
 
 Do not commit `.env` or print a real token. Start LineageShield:
@@ -114,10 +120,11 @@ Demo flow for judges:
 2. Load the sample and run the investigation.
 3. Read the merge decision and four summary metrics first.
 4. Select nodes in the SVG graph and filter the dependency explorer.
-5. Expand the deterministic risk evidence and show the score composition.
-6. Review Migration, Compatibility, Tests, Rollback, and PR Summary.
-7. Export the complete JSON report.
-8. Open **Record in DataHub**, preview the exact patch, and show that Apply is disabled by default.
+5. Open **Agent investigation** and show the actual read-tool trace and recorded lineage fallback.
+6. Expand the deterministic risk evidence and show the score composition.
+7. Review Migration, Compatibility, Tests, Rollback, and PR Summary.
+8. Export the complete JSON report, including `agent_trace`.
+9. Open **Record in DataHub**, preview the exact patch, and show that Apply is disabled by default.
 
 ## Current capabilities
 
@@ -143,6 +150,42 @@ Demo flow for judges:
 - Copy actions, individual artifact downloads, and full JSON export
 - Structured provider health and analysis errors without browser alerts
 - A two-step, root-only DataHub write-back with an exact preview, explicit confirmation, read-back receipt, and idempotent repeat behavior
+- Agent Context Kit 1.6.0.17 execution during every normal live investigation, with sanitized tool audit data and no paid model dependency
+- A reusable, validated `schema-change-impact-review` skill under `skills/` for possible future contribution to DataHub Skills
+
+## Agent Context Kit integration
+
+LineageShield uses the Agent Context Kit because it provides DataHub-aware context operations that are directly auditable during an agentic investigation. It does not delegate correctness to an LLM. The deterministic provider, risk engine, thresholds, approvals, safeguard templates, write-back confirmation, and mutation adapter remain authoritative.
+
+The installed and pinned package is `datahub-agent-context==1.6.0.17`. The application uses these exact public interfaces:
+
+```python
+from datahub_agent_context.context import DataHubContext
+from datahub_agent_context.mcp_tools.entities import get_entities
+from datahub_agent_context.mcp_tools.lineage import get_lineage
+```
+
+For each live analysis, `AgentContextService` uses the same `DataHubClient.from_env()` client and performs:
+
+1. `get_entities(urns=[root_urn])`
+2. `get_lineage(urn=root_urn, column=column, upstream=False, max_hops=2, max_results=60)`
+3. `get_lineage(..., column=None, ...)` only when column lineage is empty or unusable
+
+The default path is deterministic and read-only. It never asks for an OpenAI, Anthropic, Google, or other paid model key, and `llm_used` is always `false`. There is currently no optional LLM integration. The narrative is a fixed evidence summary and cannot override the score or decision.
+
+Every `AnalysisResult` contains an `agent_trace` with:
+
+- `status`: `completed`, `degraded`, or `unavailable`
+- kit version, deterministic read-only mode, and total duration
+- requested and successful operation IDs
+- per-tool status, safe result summary, duration, and evidence URNs
+- sanitized failure types and messages without raw responses
+- whether fallback occurred and why
+- evidence references and deterministic narrative provenance
+
+If the package, client, or a tool is unavailable, LineageShield returns that degraded state honestly and continues only when the deterministic provider already supplied usable context. Agent output never creates lineage, owners, quality, usage, approvals, risk points, or mutation outcomes.
+
+The reusable DataHub skill is [skills/schema-change-impact-review/SKILL.md](skills/schema-change-impact-review/SKILL.md). It follows the current DataHub Skills layout with self-contained examples and risk/safety references. It has been validated locally but has not been contributed upstream.
 
 ## Safe DataHub write-back
 
@@ -190,6 +233,8 @@ The installed DataHub v2 `EntityClient` exposes single-entity `get()` calls. To 
 - No URNs, access tokens, or response bodies are written to failure logs.
 
 These values can be tuned with the `DATAHUB_ENRICHMENT_*` environment settings shown above. The lineage limit remains 60 downstream assets.
+
+Agent Context execution has a separate 10-second deadline per tool and 24-second total budget by default. Calls run in worker threads so the FastAPI event loop remains responsive. An application timeout stops awaiting a synchronous SDK call but cannot terminate its worker thread. The trace reports the timeout and deterministic analysis continues when possible. Use the `AGENT_CONTEXT_*` settings above to tune the bounded read path.
 
 ## Offline demo provider
 
@@ -254,7 +299,14 @@ Automated tests use mocked or bundled providers and do not require DataHub:
 python -m pytest -q
 ```
 
-The suite covers risk thresholds, a large downstream blast radius, lineage fallback and duplicate removal, root and downstream enrichment, reference normalization and deduplication, partial failures and timeouts, metadata provenance, approval owners, readable URN fallbacks, analysis-store bounds and expiry, preview/apply safety, tamper rejection, description preservation, idempotency, and mocked FastAPI endpoints. It does not require a running DataHub server.
+The suite covers risk thresholds, a large downstream blast radius, lineage fallback and duplicate removal, root and downstream enrichment, reference normalization and deduplication, partial failures and timeouts, metadata provenance, approval owners, readable URN fallbacks, analysis-store bounds and expiry, preview/apply safety, tamper rejection, description preservation, idempotency, Agent Context execution and failure isolation, authoritative scoring, no-key/no-mutation guarantees, JSON trace export, skill safety content, and mocked FastAPI endpoints. It does not require a running DataHub server.
+
+Run the Agent Context integration tests and skill validator directly:
+
+```powershell
+python -m pytest tests/test_agent_context.py -q
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" skills\schema-change-impact-review
+```
 
 Import check:
 
@@ -271,6 +323,10 @@ python -c "import app.main; print('LineageShield import OK')"
 - DataHub has no universal criticality field in the retrieved aspects. Exact `criticality` structured/custom property values are treated as explicit; otherwise the existing deterministic asset-type/platform/hop inference is retained and labeled `inferred`.
 - Reference names depend on the typed bulk OpenAPI endpoint. If a referenced user, group, ownership type, tag, or term cannot be resolved, the API keeps its full URN and supplies a readable URN fallback label.
 - The installed DataHub v2 SDK reports its entity API as experimental. LineageShield isolates SDK failures and falls back safely, but future SDK upgrades should be regression-tested.
+- The installed Agent Context Kit's package namespace eagerly imports its complete MCP tool module, including mutation helpers, and emits an experimental SDK warning in this environment. LineageShield's adapter exposes and invokes only `get_entities` and `get_lineage`; normal analysis still performs zero mutations.
+- On the current local OSS sample, Agent Context Kit column-level lineage returns zero results while its dataset-level lineage returns 24. The trace records this expected fallback instead of claiming fine-grained evidence.
+- Agent Context calls duplicate a small amount of provider retrieval to prove real toolkit execution. This adds bounded latency but keeps provider validation and deterministic scoring independent.
+- The deterministic agent narrative summarizes relationships at investigation time; there is no model-generated reasoning or optional LLM configuration yet.
 - Application timeouts stop waiting for synchronous SDK work; Python cannot forcibly terminate an already-running `to_thread` HTTP call, which may finish in the background.
 - Completed-analysis storage is process-local, capped at 100 entries, and expires records after 30 minutes by default. It is lost on restart and is not suitable for multiple workers, durable audit, or production coordination.
 - Preview and Apply each read the current effective description. Applying creates or updates DataHub's editable description layer; on assets whose visible description came only from ingestion, this can intentionally shadow later ingestion-owned description updates until the editable override is reverted.
@@ -284,9 +340,10 @@ python -c "import app.main; print('LineageShield import OK')"
 ```text
 app/
   context/       DataHub and demo context providers
-  services/      Risk scoring, orchestration, artifact generation, analysis store, write-back
+  services/      Risk scoring, Agent Context orchestration, artifacts, analysis store, write-back
   static/        Enterprise review console and SVG lineage renderer
   data/          Bundled offline demo graph
+skills/          Reusable schema-change-impact-review DataHub Skill
 tests/           Unit and FastAPI tests
 ```
 

@@ -53,6 +53,7 @@ const PROGRESS_LABELS = [
   "Traversing downstream lineage",
   "Classifying affected assets",
   "Calculating deterministic risk",
+  "Running Agent Context tools",
   "Generating safeguards"
 ];
 
@@ -98,6 +99,19 @@ const elements = {
   platformSummary: byId("platform-summary"),
   approvalMetric: byId("approval-metric"),
   approvalSummary: byId("approval-summary"),
+  agentStatus: byId("agent-status"),
+  agentEvidenceCount: byId("agent-evidence-count"),
+  agentAuthoritativeResult: byId("agent-authoritative-result"),
+  agentNarrativeSource: byId("agent-narrative-source"),
+  agentModelState: byId("agent-model-state"),
+  agentNarrative: byId("agent-narrative"),
+  agentToolkit: byId("agent-toolkit"),
+  agentDuration: byId("agent-duration"),
+  agentFallback: byId("agent-fallback"),
+  agentToolSummary: byId("agent-tool-summary"),
+  agentExecutions: byId("agent-executions"),
+  agentFallbackReason: byId("agent-fallback-reason"),
+  agentEvidenceReferences: byId("agent-evidence-references"),
   lineageCanvas: byId("lineage-canvas"),
   lineageNote: byId("lineage-note"),
   inspectorType: byId("inspector-type"),
@@ -319,7 +333,7 @@ function resetProgress() {
 
 function startProgress() {
   resetProgress();
-  const delays = [800, 1650, 2500, 3350];
+  const delays = [700, 1400, 2100, 2800, 3500];
   delays.forEach((delay, index) => {
     const target = index + 1;
     state.progressTimers.push(window.setTimeout(() => {
@@ -328,7 +342,7 @@ function startProgress() {
         stage.classList.toggle("is-active", stageIndex === target);
       });
       elements.loadingTitle.textContent = PROGRESS_LABELS[target];
-      elements.progressFill.style.width = `${18 + target * 18}%`;
+      elements.progressFill.style.width = `${16 + target * 15}%`;
     }, delay));
   });
 }
@@ -421,6 +435,117 @@ function renderDecision(result) {
           : "No owners returned by DataHub")
         : "Owner metadata unavailable")
       : "No owner approval required");
+}
+
+function agentStatusLabel(status) {
+  return {
+    completed: "Completed",
+    degraded: "Degraded",
+    unavailable: "Unavailable"
+  }[status] || "Unavailable";
+}
+
+function agentNarrativeSourceLabel(source) {
+  return {
+    deterministic_orchestration: "Deterministic orchestration",
+    optional_model: "Optional model output",
+    unavailable: "Unavailable"
+  }[source] || "Unavailable";
+}
+
+function evidenceTypeLabel(type) {
+  return {
+    root_entity: "Root entity",
+    column_lineage: "Column lineage",
+    dataset_lineage: "Dataset lineage fallback"
+  }[type] || "DataHub context";
+}
+
+function renderAgentInvestigation(result) {
+  const trace = result.agent_trace || {
+    status: "unavailable",
+    executed: false,
+    tools_requested: [],
+    tools_succeeded: [],
+    tool_failures: [],
+    executions: [],
+    context_evidence_references: [],
+    fallback_occurred: true,
+    fallback_reason: "This response did not include an Agent Context Kit trace.",
+    duration_ms: 0,
+    narrative_source: "unavailable",
+    narrative: "Agent Context Kit did not execute for this investigation.",
+    llm_used: false
+  };
+  const requested = Array.isArray(trace.tools_requested) ? trace.tools_requested : [];
+  const succeeded = Array.isArray(trace.tools_succeeded) ? trace.tools_succeeded : [];
+  const executions = Array.isArray(trace.executions) ? trace.executions : [];
+  const references = Array.isArray(trace.context_evidence_references)
+    ? trace.context_evidence_references
+    : [];
+
+  elements.agentStatus.dataset.state = trace.status || "unavailable";
+  elements.agentStatus.textContent = agentStatusLabel(trace.status);
+  elements.agentEvidenceCount.textContent = `${references.length} reference${references.length === 1 ? "" : "s"}`;
+  elements.agentAuthoritativeResult.textContent = `${result.decision} · ${result.risk_score}/100`;
+  elements.agentNarrativeSource.textContent = agentNarrativeSourceLabel(trace.narrative_source);
+  elements.agentModelState.textContent = trace.llm_used ? "Optional model used" : "No model called";
+  elements.agentNarrative.textContent = trace.narrative || "No agent narrative was available.";
+  elements.agentToolkit.textContent = trace.toolkit_version
+    ? `${trace.toolkit || "datahub-agent-context"} ${trace.toolkit_version}`
+    : (trace.toolkit || "datahub-agent-context");
+  elements.agentDuration.textContent = `${Number(trace.duration_ms || 0).toLocaleString()} ms`;
+  elements.agentFallback.textContent = trace.fallback_occurred ? "Used · recorded" : "Not used";
+  elements.agentToolSummary.textContent = `${requested.length} requested · ${succeeded.length} succeeded`;
+
+  const executionItems = executions.map(execution => {
+    const item = document.createElement("li");
+    item.className = "agent-execution";
+    item.dataset.state = execution.status || "failure";
+    const heading = document.createElement("div");
+    const operation = document.createElement("strong");
+    operation.textContent = execution.operation || execution.tool || "Context operation";
+    const status = document.createElement("span");
+    status.textContent = execution.status || "unknown";
+    heading.append(operation, status);
+    const summary = document.createElement("p");
+    summary.textContent = execution.result_summary || "No operation summary was returned.";
+    const duration = document.createElement("small");
+    duration.textContent = `${Number(execution.duration_ms || 0).toLocaleString()} ms · ${execution.tool || "tool"}`;
+    item.append(heading, summary, duration);
+    return item;
+  });
+  if (!executionItems.length) {
+    const empty = document.createElement("li");
+    empty.className = "agent-execution is-empty";
+    empty.textContent = "No Agent Context Kit tool execution was reported.";
+    executionItems.push(empty);
+  }
+  elements.agentExecutions.replaceChildren(...executionItems);
+
+  elements.agentFallbackReason.textContent = trace.fallback_reason || "";
+  elements.agentFallbackReason.classList.toggle("is-hidden", !trace.fallback_reason);
+
+  const referenceItems = references.map(reference => {
+    const item = document.createElement("li");
+    const identity = document.createElement("span");
+    const label = document.createElement("strong");
+    label.textContent = reference.label || readableNameFromUrn(reference.urn);
+    const type = document.createElement("small");
+    type.textContent = evidenceTypeLabel(reference.evidence_type);
+    identity.append(label, type);
+    const urn = document.createElement("code");
+    urn.textContent = reference.urn || "Reference unavailable";
+    item.append(identity, urn);
+    return item;
+  });
+  if (!referenceItems.length) {
+    const empty = document.createElement("li");
+    empty.className = "agent-evidence-empty";
+    empty.textContent = "No Agent Context Kit evidence references were available.";
+    referenceItems.push(empty);
+  }
+  elements.agentEvidenceReferences.replaceChildren(...referenceItems);
 }
 
 function metadataPair(label, value) {
@@ -734,6 +859,7 @@ function renderResult(result) {
   state.artifactTab = "migration";
   resetWriteback();
   renderDecision(result);
+  renderAgentInvestigation(result);
   renderLineageSection(result);
   populatePlatformFilter(result.affected_assets);
   renderAssetList();
