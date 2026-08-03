@@ -1,14 +1,61 @@
 # LineageShield
 
+[![Tests](https://github.com/Rahmat9009/LineageShield/actions/workflows/tests.yml/badge.svg)](https://github.com/Rahmat9009/LineageShield/actions/workflows/tests.yml)
+
 **A live DataHub change-review agent that shows who and what a schema change can break before it is merged.**
 
-LineageShield accepts a proposed column rename, type change, addition, or removal. It queries downstream lineage from DataHub, executes a read-only Agent Context Kit investigation, normalizes the affected datasets, pipelines, charts, dashboards, and ML assets, calculates a deterministic risk score, generates practical migration safeguards, and returns an auditable `ALLOW`, `REVIEW`, or `BLOCK` decision.
+**Challenge category:** DataHub Agent Hackathon
 
-The project is built for the **DataHub Agent Hackathon** and is designed for a concise three-minute demonstration.
+> **Screenshot placeholder:** Real screenshots have not been added yet. See the [exact manual capture checklist](docs/screenshots/README.md); this repository does not use broken placeholder image links.
 
-## The problem
+## 30-second judge overview
+
+### Problem
 
 A schema change that looks local in a pull request can silently break dbt models, scheduled pipelines, executive dashboards, and production features. Reviewers rarely have the complete dependency context at merge time. LineageShield brings that context into a single pre-merge investigation and explains every point in its decision.
+
+### Workflow
+
+1. Submit a column rename, drop, type change, or addition.
+2. Query real downstream lineage from **DataHub OSS**, enrich every returned asset with available metadata, and run an independent read-only **Agent Context Kit** investigation.
+3. Apply an explainable **deterministic risk score** and return `ALLOW`, `REVIEW`, or `BLOCK` with required owner approvals.
+4. Generate review-only migration SQL, a compatibility layer, schema tests, rollback steps, and a pull-request summary.
+5. Optionally preview and explicitly confirm an **idempotent, root-only DataHub write-back**. Analysis is read-only by default.
+
+### Verified live result
+
+The committed [Order Details rename capture](examples/order-details-rename/) is a real local API result, not demo data: **`BLOCK`, 97/100 (`CRITICAL`), 24 downstream assets across dbt, Looker, Power BI, Snowflake, and Tableau**. DataHub enriched 25/25 entities. Agent Context Kit executed three successful read operations, recorded 0 column-lineage references, and fell back visibly to 24 dataset-level references. No generated SQL was executed, and the captured write-back preview performed no mutation.
+
+### Technologies
+
+- DataHub OSS and `acryl-datahub` 1.6.0.6 for lineage and real metadata enrichment
+- DataHub Agent Context Kit 1.6.0.17 for auditable `get_entities` and `get_lineage` tool execution
+- A reusable, validated [DataHub Skill](skills/schema-change-impact-review/SKILL.md)
+- Python 3.11, FastAPI, Pydantic, pytest, and build-free vanilla HTML/CSS/JavaScript
+- Deterministic scoring and safeguards; **no paid LLM or model API key required**
+- **51 passing tests**, isolated from live DataHub
+
+### Quick demo links
+
+- [Captured live example and generated artifacts](examples/order-details-rename/)
+- [Architecture and trust boundaries](docs/architecture.md)
+- [Judge setup, exact results, and troubleshooting](docs/judge-guide.md)
+- [2:45 demo script](docs/demo-script.md)
+- [Reusable schema-change-impact-review DataHub Skill](skills/schema-change-impact-review/SKILL.md)
+
+### Installation
+
+For the fastest offline UI evaluation:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+For the primary live workflow, start DataHub OSS at `http://localhost:8080`, install `requirements-datahub.txt`, and copy `.env.live.example` instead. The complete path is in the [judge guide](docs/judge-guide.md#full-live-datahub-setup) and below.
 
 ## How DataHub is used
 
@@ -27,6 +74,8 @@ Direct metadata can include display name, platform, description, schema fields, 
 Normal analysis remains read-only. An optional, disabled-by-default write-back flow can record a reviewed result on the root dataset only after a separate preview and explicit confirmation. LineageShield never creates pull requests or executes generated SQL.
 
 ## Architecture
+
+See [the full Mermaid architecture and authority boundaries](docs/architecture.md).
 
 ```text
 Browser (vanilla HTML/CSS/JS)
@@ -152,6 +201,26 @@ Demo flow for judges:
 - A two-step, root-only DataHub write-back with an exact preview, explicit confirmation, read-back receipt, and idempotent repeat behavior
 - Agent Context Kit 1.6.0.17 execution during every normal live investigation, with sanitized tool audit data and no paid model dependency
 - A reusable, validated `schema-change-impact-review` skill under `skills/` for possible future contribution to DataHub Skills
+
+## What makes this an agent
+
+LineageShield does more than display a lineage query:
+
+- **Actual tool execution:** in live mode it invokes Agent Context Kit's `get_entities` and `get_lineage` operations through `DataHubContext`, in addition to the authoritative provider retrieval.
+- **Traceability:** every operation records a sanitized status, duration, count summary, and evidence URNs in `agent_trace`; raw tool payloads, descriptions, prompts, tokens, and secret-bearing errors are not retained.
+- **Evidence-aware fallback:** it attempts column lineage first and deliberately executes dataset lineage when fine-grained evidence is empty or unusable. The fallback and reason remain visible.
+- **Deterministic action:** it turns the retrieved graph into a reproducible score, decision, approval list, explanation, and migration safeguards. The narrative cannot override any of them.
+- **Controlled write-back:** after a separate preview, the agent can record the stored review on the root DataHub asset only when mutations are enabled and a human supplies the exact confirmation. Repeating the same record is idempotent.
+
+## Truthfulness and safety
+
+- Live results come from DataHub; the bundled demo provider is labeled and never presented as live evidence.
+- Missing owners, usage, quality, tags, schema fields, or terms remain empty, `unknown`, or `unavailable` instead of being fabricated.
+- Only exact DataHub `criticality` properties are explicit. The deterministic asset/platform/hop rule is always labeled `inferred`.
+- Usage remains 0 and `unavailable` until the connected SDK exposes a defensible normalized score; raw query counts are not converted onto an invented scale.
+- Provider evidence and deterministic services are authoritative. The Agent Context narrative is a bounded evidence summary, uses no paid LLM, and cannot change risk or mutation behavior.
+- Analysis and preview are read-only. Generated SQL is never executed. Write-back is disabled by default, snapshot-backed, root-only, explicitly confirmed, verified, and isolated from downstream assets.
+- The committed [live example](examples/order-details-rename/) preserves the API values and explicitly reports that executable rollback SQL was not returned.
 
 ## Agent Context Kit integration
 

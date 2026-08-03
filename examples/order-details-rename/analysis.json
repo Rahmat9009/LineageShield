@@ -1,0 +1,2470 @@
+{
+  "analysis_id": "12d3b0db-9393-4c8c-87ce-a25ac57dbabf",
+  "provider": "datahub",
+  "decision": "BLOCK",
+  "risk_score": 97,
+  "raw_risk_score": 97,
+  "risk_level": "CRITICAL",
+  "factors": [
+    {
+      "label": "Rename operation",
+      "points": 12,
+      "evidence": "The operation has a base risk weight of 12."
+    },
+    {
+      "label": "Large downstream blast radius",
+      "points": 20,
+      "evidence": "24 downstream assets are affected."
+    },
+    {
+      "label": "Downstream dashboards and charts",
+      "points": 25,
+      "evidence": "Datahub Order Entries, Customer Analysis, Geographics, Executive Summary, DAX Visual"
+    },
+    {
+      "label": "Business-critical assets",
+      "points": 20,
+      "evidence": "Order Details (inferred fallback), Datahub Order Entries (inferred fallback), Order Details (inferred fallback), Customer Analytics Measures (inferred fallback), Essential KPI Measures (inferred fallback), Geographic Measures (inferred fallback), Product Perfromance Measures (inferred fallback), Order History (inferred fallback)"
+    },
+    {
+      "label": "Existing quality failure",
+      "points": 10,
+      "evidence": "Order History"
+    },
+    {
+      "label": "Cross-team coordination",
+      "points": 10,
+      "evidence": "10 owner(s): Andrea Garcia, Backend Engineering Team, Data Platform Team, David Kim, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen"
+    }
+  ],
+  "affected_assets": [
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry.explore.order_details,PROD)",
+      "name": "Order Details",
+      "asset_type": "dataset",
+      "platform": "looker",
+      "description": "### Order Details\n\nThe **Order Details** table is a central component of the e-commerce data ecosystem, capturing detailed information about each order placed by customers. This table is of high business importance as it provides critical insights into customer purchasing behavior, product performance, and the overall health of the e-commerce operations.\n\nThe table is sourced from the [@order-entry-looker.view.order_details](urn:li:dataset:(urn:li:dataPlatform:looker,order-entry-looker.view.order_details,PROD)) view, which is likely a derived table from one or more underlying operational data sources. The table contains a wide range of dimensions related to the order, customer, product, and fulfillment details, as well as several measures such as order total, line item total, and quantity.\n\nThis table is likely consumed by various downstream reporting and analytics applications to support use cases such as sales performance analysis, customer segmentation, inventory management, and marketing campaign optimization. The table's detailed grain and comprehensive set of attributes make it a valuable source of information for data-driven decision-making across the e-commerce business.\n\n#### Technical Notes\n\n- The **Order Details** table is a view, meaning it is a derived dataset that is generated from one or more underlying tables.\n- The table has a detailed grain, capturing information at the individual order line item level.\n- The table contains several columns that may be considered Personally Identifiable Information (PII), such as customer names, email addresses, and phone numbers. Appropriate access controls and data governance policies should be in place to ensure the proper handling of this sensitive data.\n\n#### Potential PII Columns\n\nThe following columns in the **Order Details** table may contain Personally Identifiable Information (PII):\n\n- `cust_email`\n- `cust_first_name`\n- `cust_last_name`\n- `phone_number`\n- `billing_address_line1`\n- `billing_address_line2`\n- `billing_town_city`\n- `billing_region`\n- `billing_country`\n- `billing_zipcode`\n- `shipping_address_line1`\n- `shipping_address_line2`\n- `shipping_town_city`\n- `shipping_region`\n- `shipping_country`\n- `shipping_zipcode`",
+      "owners": [
+        "Data Platform Team",
+        "Backend Engineering Team",
+        "Ian Chen"
+      ],
+      "owner_urns": [
+        "urn:li:corpGroup:b2fd91.ORG_DATA_PLATFORM",
+        "urn:li:corpGroup:b2fd91.ORG_BACKEND_ENG",
+        "urn:li:corpuser:b2fd91.EMP006"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpGroup:b2fd91.ORG_DATA_PLATFORM",
+          "label": "Data Platform Team",
+          "ownership_type": "Technical Owner",
+          "ownership_type_urn": "urn:li:ownershipType:__system__technical_owner"
+        },
+        {
+          "urn": "urn:li:corpGroup:b2fd91.ORG_BACKEND_ENG",
+          "label": "Backend Engineering Team",
+          "ownership_type": "Data Steward",
+          "ownership_type_urn": "urn:li:ownershipType:__system__data_steward"
+        },
+        {
+          "urn": "urn:li:corpuser:b2fd91.EMP006",
+          "label": "Ian Chen",
+          "ownership_type": "Business Owner",
+          "ownership_type_urn": "urn:li:ownershipType:__system__business_owner"
+        }
+      ],
+      "tags": [
+        "b2fd91.ecommerce"
+      ],
+      "tag_urns": [
+        "urn:li:tag:b2fd91.ecommerce"
+      ],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Daily"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          99.4
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "3 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Data Platform"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.bryan@example.com"
+        ]
+      },
+      "criticality": "medium",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "order_details.billing_address_line1",
+        "order_details.billing_address_line2",
+        "order_details.billing_country",
+        "order_details.billing_region",
+        "order_details.billing_town_city",
+        "order_details.billing_zipcode",
+        "order_details.category_id",
+        "order_details.category_name",
+        "order_details.condition",
+        "order_details.cost_of_delivery",
+        "order_details.cust_email",
+        "order_details.cust_first_name",
+        "order_details.cust_last_name",
+        "order_details.customer_class",
+        "order_details.customer_id",
+        "order_details.delivery_status",
+        "order_details.delivery_type",
+        "order_details.discount_amount",
+        "order_details.discount_percent",
+        "order_details.dispatch_date",
+        "order_details.estimated_delivery",
+        "order_details.gift_wrap",
+        "order_details.line_item_id",
+        "order_details.line_total",
+        "order_details.list_price",
+        "order_details.order_date",
+        "order_details.order_date_timestamp",
+        "order_details.order_id",
+        "order_details.order_mode",
+        "order_details.order_status",
+        "order_details.order_total",
+        "order_details.payment_method_code",
+        "order_details.phone_number",
+        "order_details.product_description",
+        "order_details.product_id",
+        "order_details.product_name",
+        "order_details.product_status",
+        "order_details.promotion_description",
+        "order_details.promotion_id",
+        "order_details.promotion_name",
+        "order_details.quantity",
+        "order_details.quantity_on_hand",
+        "order_details.return_date",
+        "order_details.return_status",
+        "order_details.shipping_address_line1",
+        "order_details.shipping_address_line2",
+        "order_details.shipping_country",
+        "order_details.shipping_region",
+        "order_details.shipping_town_city",
+        "order_details.shipping_zipcode",
+        "order_details.stock_status",
+        "order_details.unit_price",
+        "order_details.updated_date",
+        "order_details.updated_month",
+        "order_details.updated_quarter",
+        "order_details.updated_raw",
+        "order_details.updated_time",
+        "order_details.updated_week",
+        "order_details.updated_year",
+        "order_details.wait_till_complete_yn",
+        "order_details.warehouse_id",
+        "order_details.warehouse_name",
+        "order_details.count"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "description": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,b2fd91.ORDER_ENTRY_DB.analytics.order_history,PROD)",
+      "name": "Order History",
+      "asset_type": "dataset",
+      "platform": "dbt",
+      "description": "Incremental table containing all historical order information",
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Weekly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          86.6
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "1 year"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Engineering"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.kirk@example.com"
+        ]
+      },
+      "criticality": "medium",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "order_id",
+        "customer_id",
+        "order_status",
+        "order_total",
+        "as_of_date"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "description": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry-looker.view.order_details,PROD)",
+      "name": "Order Details",
+      "asset_type": "dataset",
+      "platform": "looker",
+      "description": null,
+      "owners": [
+        "Fiona Green",
+        "Ian Chen",
+        "Data Platform Team",
+        "Andrea Garcia"
+      ],
+      "owner_urns": [
+        "urn:li:corpuser:b2fd91.marty@example.com",
+        "urn:li:corpuser:b2fd91.EMP006",
+        "urn:li:corpGroup:b2fd91.ORG_DATA_PLATFORM",
+        "urn:li:corpuser:b2fd91.alex@example.com"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpuser:b2fd91.marty@example.com",
+          "label": "Fiona Green",
+          "ownership_type": "Technical Owner",
+          "ownership_type_urn": "urn:li:ownershipType:__system__technical_owner"
+        },
+        {
+          "urn": "urn:li:corpuser:b2fd91.EMP006",
+          "label": "Ian Chen",
+          "ownership_type": "Business Owner",
+          "ownership_type_urn": "urn:li:ownershipType:__system__business_owner"
+        },
+        {
+          "urn": "urn:li:corpGroup:b2fd91.ORG_DATA_PLATFORM",
+          "label": "Data Platform Team",
+          "ownership_type": "Technical Owner",
+          "ownership_type_urn": "urn:li:ownershipType:__system__technical_owner"
+        },
+        {
+          "urn": "urn:li:corpuser:b2fd91.alex@example.com",
+          "label": "Andrea Garcia",
+          "ownership_type": "Technical Owner",
+          "ownership_type_urn": "urn:li:ownershipType:__system__technical_owner"
+        }
+      ],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Weekly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          77.1
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "90 days"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Marketing"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.jonny1@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "billing_address_line1",
+        "billing_address_line2",
+        "billing_country",
+        "billing_region",
+        "billing_town_city",
+        "billing_zipcode",
+        "category_id",
+        "category_name",
+        "condition",
+        "cost_of_delivery",
+        "cust_email",
+        "cust_first_name",
+        "cust_last_name",
+        "customer_class",
+        "customer_id",
+        "delivery_status",
+        "delivery_type",
+        "discount_amount",
+        "discount_percent",
+        "dispatch_date",
+        "estimated_delivery",
+        "gift_wrap",
+        "line_item_id",
+        "line_total",
+        "list_price",
+        "order_date",
+        "order_date_timestamp",
+        "order_id",
+        "order_mode",
+        "order_status",
+        "order_total",
+        "payment_method_code",
+        "phone_number",
+        "product_description",
+        "product_id",
+        "product_name",
+        "product_status",
+        "promotion_description",
+        "promotion_id",
+        "promotion_name",
+        "quantity",
+        "quantity_on_hand",
+        "return_date",
+        "return_status",
+        "shipping_address_line1",
+        "shipping_address_line2",
+        "shipping_country",
+        "shipping_region",
+        "shipping_town_city",
+        "shipping_zipcode",
+        "stock_status",
+        "unit_price",
+        "wait_till_complete_yn",
+        "warehouse_id",
+        "warehouse_name",
+        "updated",
+        "count"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dashboard:(powerbi,b2fd91.reports.66666666-7777-8888-9999-000000000000)",
+      "name": "Datahub Order Entries",
+      "asset_type": "dashboard",
+      "platform": "powerbi",
+      "description": null,
+      "owners": [
+        "Sarah Chen",
+        "Marco Santos",
+        "Priya Sharma",
+        "Andrea Garcia"
+      ],
+      "owner_urns": [
+        "urn:li:corpuser:b2fd91.sam@example.com",
+        "urn:li:corpuser:b2fd91.michael@example.com",
+        "urn:li:corpuser:b2fd91.patrick1@example.com",
+        "urn:li:corpuser:b2fd91.alex@example.com"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpuser:b2fd91.sam@example.com",
+          "label": "Sarah Chen",
+          "ownership_type": null,
+          "ownership_type_urn": null
+        },
+        {
+          "urn": "urn:li:corpuser:b2fd91.michael@example.com",
+          "label": "Marco Santos",
+          "ownership_type": null,
+          "ownership_type_urn": null
+        },
+        {
+          "urn": "urn:li:corpuser:b2fd91.patrick1@example.com",
+          "label": "Priya Sharma",
+          "ownership_type": null,
+          "ownership_type_urn": null
+        },
+        {
+          "urn": "urn:li:corpuser:b2fd91.alex@example.com",
+          "label": "Andrea Garcia",
+          "ownership_type": null,
+          "ownership_type_urn": null
+        }
+      ],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {},
+      "criticality": "critical",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "unavailable",
+        "glossary_terms": "datahub",
+        "fields": "unavailable",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "glossary_term_labels": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.ORDER_DETAILS,PROD)",
+      "name": "Order Details",
+      "asset_type": "dataset",
+      "platform": "powerbi",
+      "description": null,
+      "owners": [
+        "Karen Okonkwo"
+      ],
+      "owner_urns": [
+        "urn:li:corpuser:b2fd91.kirk@example.com"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpuser:b2fd91.kirk@example.com",
+          "label": "Karen Okonkwo",
+          "ownership_type": "Technical Owner",
+          "ownership_type_urn": "urn:li:ownershipType:__system__technical_owner"
+        }
+      ],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Monthly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          86.3
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "1 year"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Analytics"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.brock1@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "ORDER_ID",
+        "ORDER_DATE",
+        "ORDER_MODE",
+        "ORDER_STATUS",
+        "ORDER_TOTAL",
+        "COST_OF_DELIVERY",
+        "DELIVERY_TYPE",
+        "WAIT_TILL_COMPLETE_YN",
+        "PAYMENT_METHOD_CODE",
+        "CUSTOMER_ID",
+        "CUST_FIRST_NAME",
+        "CUST_LAST_NAME",
+        "CUST_EMAIL",
+        "PHONE_NUMBER",
+        "CUSTOMER_CLASS",
+        "BILLING_ADDRESS_LINE1",
+        "BILLING_ADDRESS_LINE2",
+        "BILLING_TOWN_CITY",
+        "BILLING_COUNTRY",
+        "BILLING_ZIPCODE",
+        "BILLING_REGION",
+        "SHIPPING_ADDRESS_LINE1",
+        "SHIPPING_ADDRESS_LINE2",
+        "SHIPPING_TOWN_CITY",
+        "SHIPPING_COUNTRY",
+        "SHIPPING_ZIPCODE",
+        "SHIPPING_REGION",
+        "WAREHOUSE_ID",
+        "WAREHOUSE_NAME",
+        "PROMOTION_ID",
+        "PROMOTION_NAME",
+        "PROMOTION_DESCRIPTION",
+        "LINE_ITEM_ID",
+        "PRODUCT_ID",
+        "PRODUCT_NAME",
+        "PRODUCT_DESCRIPTION",
+        "CATEGORY_ID",
+        "CATEGORY_NAME",
+        "UNIT_PRICE",
+        "QUANTITY",
+        "LINE_TOTAL",
+        "DISPATCH_DATE",
+        "RETURN_DATE",
+        "GIFT_WRAP",
+        "CONDITION",
+        "ESTIMATED_DELIVERY",
+        "LIST_PRICE",
+        "PRODUCT_STATUS",
+        "QUANTITY_ON_HAND",
+        "STOCK_STATUS",
+        "DISCOUNT_AMOUNT",
+        "DISCOUNT_PERCENT",
+        "DELIVERY_STATUS",
+        "RETURN_STATUS",
+        "UPDATED_AT",
+        "Order Size Category",
+        "Quarter"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.b980a8c5-28eb-119e-f6ca-4da32732e5be,PROD)",
+      "name": "Promotions",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [
+        "David Kim"
+      ],
+      "owner_urns": [
+        "urn:li:corpuser:b2fd91.brock1@example.com"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpuser:b2fd91.brock1@example.com",
+          "label": "David Kim",
+          "ownership_type": "Dataowner",
+          "ownership_type_urn": null
+        }
+      ],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Weekly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          86.5
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "90 days"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "E-Commerce Operations"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.michael@example.com"
+        ]
+      },
+      "criticality": "medium",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "ORDERS_WITH_PROMOTION",
+        "AVERAGE_ORDER_VALUE",
+        "TOTAL_REVENUE",
+        "PROMOTION_NAME",
+        "Promotions",
+        "AVERAGE_DISCOUNT_PERCENT"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.c067553a-127e-a871-14a0-5f32cb032c78,PROD)",
+      "name": "Order Mode",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [
+        "David Kim"
+      ],
+      "owner_urns": [
+        "urn:li:corpuser:b2fd91.brock1@example.com"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpuser:b2fd91.brock1@example.com",
+          "label": "David Kim",
+          "ownership_type": "Dataowner",
+          "ownership_type_urn": null
+        }
+      ],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Daily"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          98.8
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Data Platform"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.alex@example.com"
+        ]
+      },
+      "criticality": "medium",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "AVERAGE_ORDER_VALUE",
+        "TOTAL_REVENUE",
+        "ORDER_COUNT",
+        "Order Mode",
+        "ORDER_MODE"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f8fb6a0b-7be6-690b-cc45-3c6e0fd2bcde,PROD)",
+      "name": "Orders By Day",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [
+        "David Kim"
+      ],
+      "owner_urns": [
+        "urn:li:corpuser:b2fd91.brock1@example.com"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpuser:b2fd91.brock1@example.com",
+          "label": "David Kim",
+          "ownership_type": "Dataowner",
+          "ownership_type_urn": null
+        }
+      ],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Monthly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          76.8
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "90 days"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Marketing"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.michael@example.com"
+        ]
+      },
+      "criticality": "medium",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "ORDER_COUNT",
+        "TOTAL_SALES",
+        "ORDER_DATE",
+        "Orders By Day And Category",
+        "CATEGORY_NAME"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.fadbf744-48be-0929-a47c-5786327a3343,PROD)",
+      "name": "Top Product Category",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [
+        "David Kim"
+      ],
+      "owner_urns": [
+        "urn:li:corpuser:b2fd91.brock1@example.com"
+      ],
+      "owner_details": [
+        {
+          "urn": "urn:li:corpuser:b2fd91.brock1@example.com",
+          "label": "David Kim",
+          "ownership_type": "Dataowner",
+          "ownership_type_urn": null
+        }
+      ],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Hourly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          85.2
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Analytics"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.michael@example.com"
+        ]
+      },
+      "criticality": "medium",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "ORDERS_COUNT",
+        "Top Product Categories",
+        "TOTAL_REVENUE",
+        "Category Name",
+        "AVERAGE_ORDER_VALUE"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "datahub",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "owner_labels": "datahub",
+        "ownership_types": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Customer_Analytics_Measures,PROD)",
+      "name": "Customer Analytics Measures",
+      "asset_type": "dataset",
+      "platform": "powerbi",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Weekly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          83.1
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "1 year"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Engineering"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.EMP006"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "Value",
+        "Customer LTV"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Essential_KPI_Measures,PROD)",
+      "name": "Essential KPI Measures",
+      "asset_type": "dataset",
+      "platform": "powerbi",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Hourly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          80.5
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "1 year"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "E-Commerce Operations"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.bryan@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "Value",
+        "Total Revenue",
+        "Total Orders",
+        "Average Order Value",
+        "Total Customers",
+        "Revenue Per Customer",
+        "Total Products Sold",
+        "YTD Revenue",
+        "PY Revenue",
+        "YoY Growth",
+        "Fulfillment Rate",
+        "New Customers"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Geographic_Measures,PROD)",
+      "name": "Geographic Measures",
+      "asset_type": "dataset",
+      "platform": "powerbi",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Hourly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          82.6
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Data Platform"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.alex@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "Value",
+        "Revenue by Country",
+        "Domestic Sales",
+        "International Sales"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Product_Perfromance_Measures,PROD)",
+      "name": "Product Perfromance Measures",
+      "asset_type": "dataset",
+      "platform": "powerbi",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Daily"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          73.4
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Analytics"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.jonny1@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "Value",
+        "Revenue by Category",
+        "Top Selling Products",
+        "Total Discount Amount",
+        "Average Discount %"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_history,PROD)",
+      "name": "Order History",
+      "asset_type": "dataset",
+      "platform": "snowflake",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [
+        "💲 Large Table"
+      ],
+      "tag_urns": [
+        "urn:li:tag:b2fd91.__default_large_table"
+      ],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Daily"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          88.5
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "Indefinite"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Engineering"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.sam@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "order_id",
+        "customer_id",
+        "order_status",
+        "order_total",
+        "as_of_date"
+      ],
+      "quality_status": "failing",
+      "quality_evidence": "DataHub reports 1 failing quality test(s).",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "datahub",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.37fcfb15-34ae-973a-5ae3-cf63691d48e3,PROD)",
+      "name": "Custom SQL Query",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Weekly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          81.3
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "3 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Engineering"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.sam@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "AVERAGE_ORDER_VALUE",
+        "ORDER_MODE",
+        "TOTAL_REVENUE",
+        "ORDER_COUNT"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.4a3af1dd-fd0c-7077-d5fd-aa2fdf87cb23,PROD)",
+      "name": "Custom SQL Query",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Daily"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          76.3
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Data Platform"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.brock1@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "TOTAL_REVENUE",
+        "CATEGORY_NAME",
+        "AVERAGE_ORDER_VALUE",
+        "ORDERS_COUNT"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.8bfe7483-1c9a-a0e1-ec84-57207dd37a15,PROD)",
+      "name": "Custom SQL Query",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "GDPR",
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.309dd98b-a96c-49de-93ad-acff10e963a2",
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Daily"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          85.9
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Engineering"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.brock1@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "TOTAL_REVENUE",
+        "ORDERS_WITH_PROMOTION",
+        "AVERAGE_DISCOUNT_PERCENT",
+        "AVERAGE_ORDER_VALUE",
+        "PROMOTION_NAME"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f32082e5-06b8-f46e-9047-4611fffe66b0,PROD)",
+      "name": "Custom SQL Query",
+      "asset_type": "dataset",
+      "platform": "tableau",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Real-time"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          78
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "1 year"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Analytics"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.sam@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "TOTAL_SALES",
+        "ORDER_DATE",
+        "ORDER_COUNT",
+        "CATEGORY_NAME"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.217abe0d5c1cd421c384)",
+      "name": "Customer Analysis",
+      "asset_type": "chart",
+      "platform": "powerbi",
+      "description": "Customer Analysis",
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [],
+      "glossary_term_urns": [],
+      "structured_properties": {},
+      "criticality": "critical",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "unavailable",
+        "glossary_terms": "datahub",
+        "fields": "unavailable",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "description": "datahub",
+        "glossary_term_labels": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.3f48c0bf859b2d14dcd0)",
+      "name": "Geographics",
+      "asset_type": "chart",
+      "platform": "powerbi",
+      "description": "Geographics",
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [],
+      "glossary_term_urns": [],
+      "structured_properties": {},
+      "criticality": "critical",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "unavailable",
+        "glossary_terms": "datahub",
+        "fields": "unavailable",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "description": "datahub",
+        "glossary_term_labels": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.83a9aaa3207edd6c721e)",
+      "name": "Executive Summary",
+      "asset_type": "chart",
+      "platform": "powerbi",
+      "description": "Executive Summary",
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [],
+      "glossary_term_urns": [],
+      "structured_properties": {},
+      "criticality": "critical",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "unavailable",
+        "glossary_terms": "datahub",
+        "fields": "unavailable",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "description": "datahub",
+        "glossary_term_labels": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.85e432543b30346a0507)",
+      "name": "DAX Visual",
+      "asset_type": "chart",
+      "platform": "powerbi",
+      "description": "DAX Visual",
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [],
+      "glossary_term_urns": [],
+      "structured_properties": {},
+      "criticality": "critical",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (2 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "unavailable",
+        "glossary_terms": "datahub",
+        "fields": "unavailable",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "description": "datahub",
+        "glossary_term_labels": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 2
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Time_Inteligence_Measures,PROD)",
+      "name": "Time Inteligence Measures",
+      "asset_type": "dataset",
+      "platform": "powerbi",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [
+        "PII"
+      ],
+      "glossary_term_urns": [
+        "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a"
+      ],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Monthly"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          77.2
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Analytics"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.jonny1@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "Value",
+        "Revenue by Month",
+        "MoM Revenue Growth",
+        "Current Year Revenue",
+        "Previous Year Revenue"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "datahub",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "glossary_term_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details_replica,PROD)",
+      "name": "Order Details Replica",
+      "asset_type": "dataset",
+      "platform": "snowflake",
+      "description": null,
+      "owners": [],
+      "owner_urns": [],
+      "owner_details": [],
+      "tags": [],
+      "tag_urns": [],
+      "glossary_terms": [],
+      "glossary_term_urns": [],
+      "structured_properties": {
+        "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+          "Daily"
+        ],
+        "urn:li:structuredProperty:showcase.dataQualityScore": [
+          88.3
+        ],
+        "urn:li:structuredProperty:showcase.retentionPeriod": [
+          "7 years"
+        ],
+        "urn:li:structuredProperty:showcase.costCenter": [
+          "Marketing"
+        ],
+        "urn:li:structuredProperty:showcase.escalationContact": [
+          "urn:li:corpuser:b2fd91.jonny1@example.com"
+        ]
+      },
+      "criticality": "high",
+      "criticality_source": "inferred",
+      "criticality_evidence": "Deterministic fallback from asset type, platform, and lineage distance (1 hop(s)); this is not stored DataHub criticality.",
+      "usage_score": 0,
+      "usage_evidence": "No trustworthy normalized usage score was available.",
+      "fields": [
+        "order_id",
+        "order_date",
+        "order_mode",
+        "order_status",
+        "order_total",
+        "cost_of_delivery",
+        "delivery_type",
+        "wait_till_complete_yn",
+        "payment_method_code",
+        "customer_id",
+        "cust_first_name",
+        "cust_last_name",
+        "cust_email",
+        "phone_number",
+        "customer_class",
+        "billing_address_line1",
+        "billing_address_line2",
+        "billing_town_city",
+        "billing_country",
+        "billing_zipcode",
+        "billing_region",
+        "shipping_address_line1",
+        "shipping_address_line2",
+        "shipping_town_city",
+        "shipping_country",
+        "shipping_zipcode",
+        "shipping_region",
+        "warehouse_id",
+        "warehouse_name",
+        "promotion_id",
+        "promotion_name",
+        "promotion_description",
+        "line_item_id",
+        "product_id",
+        "product_name",
+        "product_description",
+        "category_id",
+        "category_name",
+        "unit_price",
+        "quantity",
+        "line_total",
+        "dispatch_date",
+        "return_date",
+        "gift_wrap",
+        "condition",
+        "estimated_delivery",
+        "list_price",
+        "product_status",
+        "quantity_on_hand",
+        "stock_status",
+        "discount_amount",
+        "discount_percent",
+        "delivery_status",
+        "return_status",
+        "updated_at"
+      ],
+      "quality_status": "unknown",
+      "quality_evidence": "DataHub test results were present, but none could be identified as quality tests.",
+      "metadata_sources": {
+        "name": "datahub",
+        "platform": "datahub",
+        "owners": "unavailable",
+        "tags": "datahub",
+        "glossary_terms": "unavailable",
+        "fields": "datahub",
+        "quality": "unavailable",
+        "usage": "unavailable",
+        "criticality": "inferred",
+        "entity": "datahub",
+        "tag_labels": "datahub",
+        "structured_properties": "datahub"
+      },
+      "dependency_type": "Entity-level lineage fallback",
+      "hops": 1
+    }
+  ],
+  "required_approvals": [
+    "Andrea Garcia",
+    "Data Platform Team",
+    "Fiona Green",
+    "Ian Chen",
+    "Karen Okonkwo",
+    "Marco Santos",
+    "Priya Sharma",
+    "Sarah Chen"
+  ],
+  "explanation": "This rename reaches 24 downstream asset(s), including Datahub Order Entries, Customer Analysis, Geographics. The strongest deterministic evidence is downstream dashboards and charts, large downstream blast radius. The score is 97/100, at or above the 50-point block threshold, so the merge decision is BLOCK.",
+  "artifacts": {
+    "migration_sql": "ALTER TABLE b2fd91.order_entry_db.analytics.order_details\nRENAME COLUMN ORDER_ID TO PURCHASE_ID;",
+    "compatibility_sql": "-- Temporary compatibility view; remove after consumers migrate.\nCREATE OR REPLACE VIEW b2fd91.order_entry_db.analytics.order_details_compatible AS\nSELECT\n    *,\n    PURCHASE_ID AS ORDER_ID\nFROM b2fd91.order_entry_db.analytics.order_details;",
+    "data_tests_yaml": "version: 2\nmodels:\n  - name: order_details\n    columns:\n      - name: PURCHASE_ID\n        tests:\n          - not_null\n          - accepted_values:\n              config:\n                severity: warn\n",
+    "rollback_plan": [
+      "Pause deployments that consume PURCHASE_ID.",
+      "Rename PURCHASE_ID back to ORDER_ID.",
+      "Restore the previous compatibility view.",
+      "Re-run downstream data-quality checks."
+    ],
+    "pull_request_summary": "## LineageShield change review\n\n**Asset:** `urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)`\n**Change:** `rename` on `ORDER_ID`\n**New value:** `PURCHASE_ID`\n\n**Rationale:** Standardize order identifiers across warehouse and BI assets\n\n### Generated safeguards\n- Migration SQL\n- Temporary compatibility layer\n- Data-quality tests\n- Rollback plan\n\nReview the complete impact report and obtain all required approvals."
+  },
+  "root_asset": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+    "name": "Order Details",
+    "asset_type": "dataset",
+    "platform": "snowflake",
+    "description": "Details of orders.\n\n<!-- LINEAGESHIELD:BEGIN 0129b291-4587-47bc-8cd0-d295299bdee9 -->\n## LineageShield change-impact record\n\n- **Analysis ID:** `0129b291-4587-47bc-8cd0-d295299bdee9`\n- **Analysis timestamp:** 2026-08-02T22:03:28.757058+00:00\n- **Proposed change:** rename\n- **Affected column:** `ORDER_ID`\n- **New value:** `PURCHASE_ID`\n- **Merge decision:** **BLOCK**\n- **Risk:** 97/100 (CRITICAL)\n- **Affected assets:** 24\n- **Required approvals:** Andrea Garcia, Data Platform Team, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n- **Review rationale:** This rename reaches 24 downstream asset(s), including Datahub Order Entries, Customer Analysis, Geographics. The strongest deterministic evidence is downstream dashboards and charts, large downstream blast radius. The score is 97/100, at or above the 50-point block threshold, so the merge decision is BLOCK.\n- **Proposal rationale:** LineageShield live write-back verification\n\n### Deterministic evidence\n- +12 Rename operation: The operation has a base risk weight of 12.\n- +20 Large downstream blast radius: 24 downstream assets are affected.\n- +25 Downstream dashboards and charts: Datahub Order Entries, Customer Analysis, Geographics, Executive Summary, DAX Visual\n- +20 Business-critical assets: Order Details (inferred fallback), Datahub Order Entries (inferred fallback), Order Details (inferred fallback), Customer Analytics Measures (inferred fallback), Essential KPI Measures (inferred fallback), Geographic Measures (inferred fallback), Product Perfromance Measures (inferred fallback), Order History (inferred fallback)\n- +10 Existing quality failure: Order History\n- +10 Cross-team coordination: 10 owner(s): Andrea Garcia, Backend Engineering Team, Data Platform Team, David Kim, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n\n### Generated safeguard summary\n- **Migration:** First generated migration step (not executed): ALTER TABLE b2fd91.order_entry_db.analytics.order_details\n- **Rollback:** Pause deployments that consume PURCHASE_ID.; Rename PURCHASE_ID back to ORDER_ID.; Restore the previous compatibility view.; Re-run downstream data-quality checks.\n\n_LineageShield recorded review metadata only. No migration SQL was executed._\n<!-- LINEAGESHIELD:END 0129b291-4587-47bc-8cd0-d295299bdee9 -->",
+    "owners": [
+      "DataHub SE Team",
+      "David Kim",
+      "Julia Novak"
+    ],
+    "owner_urns": [
+      "urn:li:corpGroup:b2fd91.1e0398a3-113f-475e-b6fc-32ab72a634d2",
+      "urn:li:corpuser:b2fd91.brock1@example.com",
+      "urn:li:corpuser:b2fd91.jonny1@example.com"
+    ],
+    "owner_details": [
+      {
+        "urn": "urn:li:corpGroup:b2fd91.1e0398a3-113f-475e-b6fc-32ab72a634d2",
+        "label": "DataHub SE Team",
+        "ownership_type": "Technical Owner",
+        "ownership_type_urn": "urn:li:ownershipType:__system__technical_owner"
+      },
+      {
+        "urn": "urn:li:corpuser:b2fd91.brock1@example.com",
+        "label": "David Kim",
+        "ownership_type": "Data Steward",
+        "ownership_type_urn": "urn:li:ownershipType:__system__data_steward"
+      },
+      {
+        "urn": "urn:li:corpuser:b2fd91.jonny1@example.com",
+        "label": "Julia Novak",
+        "ownership_type": "Data Steward",
+        "ownership_type_urn": "urn:li:ownershipType:__system__data_steward"
+      }
+    ],
+    "tags": [
+      "💲 Large Table",
+      "📈 Most Queried"
+    ],
+    "tag_urns": [
+      "urn:li:tag:b2fd91.__default_large_table",
+      "urn:li:tag:b2fd91.__default_high_queries"
+    ],
+    "glossary_terms": [
+      "PII",
+      "SOC2 Auditable",
+      "Order Total",
+      "Revenue by Customer Class"
+    ],
+    "glossary_term_urns": [
+      "urn:li:glossaryTerm:b2fd91.1598cf93-c199-43a1-8833-fce96faa9a1a",
+      "urn:li:glossaryTerm:b2fd91.e7106c45-b307-4eb6-9c8c-e7fff15f095a",
+      "urn:li:glossaryTerm:b2fd91.42266719-3cab-42b8-a8d2-49d782876dbc",
+      "urn:li:glossaryTerm:b2fd91.26e268c3-3688-4281-949e-8c1aa2600c02"
+    ],
+    "structured_properties": {
+      "urn:li:structuredProperty:showcase.dataFreshnessSla": [
+        "Daily"
+      ],
+      "urn:li:structuredProperty:showcase.dataQualityScore": [
+        97.5
+      ],
+      "urn:li:structuredProperty:showcase.retentionPeriod": [
+        "1 year"
+      ],
+      "urn:li:structuredProperty:showcase.costCenter": [
+        "Marketing"
+      ],
+      "urn:li:structuredProperty:showcase.escalationContact": [
+        "urn:li:corpuser:b2fd91.EMP006"
+      ]
+    },
+    "criticality": "high",
+    "criticality_source": "inferred",
+    "criticality_evidence": "Deterministic fallback: source datasets are treated as high impact for schema-change review; this is not stored DataHub criticality.",
+    "usage_score": 0,
+    "usage_evidence": "No trustworthy normalized usage score was available.",
+    "fields": [
+      "order_id",
+      "order_date",
+      "order_mode",
+      "order_status",
+      "order_total",
+      "cost_of_delivery",
+      "delivery_type",
+      "wait_till_complete_yn",
+      "payment_method_code",
+      "customer_id",
+      "cust_first_name",
+      "cust_last_name",
+      "cust_email",
+      "phone_number",
+      "customer_class",
+      "billing_address_line1",
+      "billing_address_line2",
+      "billing_town_city",
+      "billing_country",
+      "billing_zipcode",
+      "billing_region",
+      "shipping_address_line1",
+      "shipping_address_line2",
+      "shipping_town_city",
+      "shipping_country",
+      "shipping_zipcode",
+      "shipping_region",
+      "warehouse_id",
+      "warehouse_name",
+      "promotion_id",
+      "promotion_name",
+      "promotion_description",
+      "line_item_id",
+      "product_id",
+      "product_name",
+      "product_description",
+      "category_id",
+      "category_name",
+      "unit_price",
+      "quantity",
+      "line_total",
+      "dispatch_date",
+      "return_date",
+      "gift_wrap",
+      "condition",
+      "estimated_delivery",
+      "list_price",
+      "product_status",
+      "quantity_on_hand",
+      "stock_status",
+      "discount_amount",
+      "discount_percent",
+      "delivery_status",
+      "return_status",
+      "updated_at"
+    ],
+    "quality_status": "passing",
+    "quality_evidence": "DataHub reports 1 passing quality test(s).",
+    "metadata_sources": {
+      "name": "datahub",
+      "platform": "datahub",
+      "owners": "datahub",
+      "tags": "datahub",
+      "glossary_terms": "datahub",
+      "fields": "datahub",
+      "quality": "datahub",
+      "usage": "unavailable",
+      "criticality": "inferred",
+      "entity": "datahub",
+      "description": "datahub",
+      "owner_labels": "datahub",
+      "ownership_types": "datahub",
+      "tag_labels": "datahub",
+      "glossary_term_labels": "datahub",
+      "structured_properties": "datahub"
+    },
+    "dependency_type": "Source asset",
+    "hops": 0
+  },
+  "lineage_edges": [
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry.explore.order_details,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:dbt,b2fd91.ORDER_ENTRY_DB.analytics.order_history,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry-looker.view.order_details,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dashboard:(powerbi,b2fd91.reports.66666666-7777-8888-9999-000000000000)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.ORDER_DETAILS,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.b980a8c5-28eb-119e-f6ca-4da32732e5be,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.c067553a-127e-a871-14a0-5f32cb032c78,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f8fb6a0b-7be6-690b-cc45-3c6e0fd2bcde,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.fadbf744-48be-0929-a47c-5786327a3343,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Customer_Analytics_Measures,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Essential_KPI_Measures,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Geographic_Measures,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Product_Perfromance_Measures,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_history,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.37fcfb15-34ae-973a-5ae3-cf63691d48e3,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.4a3af1dd-fd0c-7077-d5fd-aa2fdf87cb23,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.8bfe7483-1c9a-a0e1-ec84-57207dd37a15,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f32082e5-06b8-f46e-9047-4611fffe66b0,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.217abe0d5c1cd421c384)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.3f48c0bf859b2d14dcd0)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.83a9aaa3207edd6c721e)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.85e432543b30346a0507)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Time_Inteligence_Measures,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    },
+    {
+      "source": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "target": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details_replica,PROD)",
+      "via_column": null,
+      "dependency_type": "entity"
+    }
+  ],
+  "glossary_terms": [
+    "PII",
+    "SOC2 Auditable",
+    "Order Total",
+    "Revenue by Customer Class",
+    "GDPR"
+  ],
+  "metadata_summary": {
+    "total_assets": 25,
+    "datahub_entities_enriched": 25,
+    "assets_with_owners": 9,
+    "assets_with_tags": 3,
+    "assets_with_schema_fields": 20,
+    "assets_with_glossary_terms": 20,
+    "assets_with_quality_signals": 2,
+    "assets_with_usage_information": 0,
+    "assets_with_explicit_criticality": 0,
+    "enrichment_failures": 0
+  },
+  "context_notes": [
+    "Live DataHub returned 24 unique downstream dependencies within two hops.",
+    "The submitted field had no fine-grained downstream lineage, so LineageShield used DataHub entity-level lineage.",
+    "DataHub entity metadata enriched 25/25 assets; owners were present on 9, tags on 3, schema fields on 20, and glossary terms on 20.",
+    "Quality is populated only from identifiable DataHub quality test results. Usage remains 0 because the installed SDK and connected instance did not provide a trustworthy normalized usage score.",
+    "All requested metadata lookups completed without an isolated failure."
+  ],
+  "agent_trace": {
+    "status": "completed",
+    "executed": true,
+    "toolkit": "datahub-agent-context",
+    "toolkit_version": "1.6.0.17",
+    "mode": "deterministic_read_only",
+    "llm_used": false,
+    "narrative_source": "deterministic_orchestration",
+    "tools_requested": [
+      "get_entities.root",
+      "get_lineage.column_downstream",
+      "get_lineage.dataset_downstream"
+    ],
+    "tools_succeeded": [
+      "get_entities.root",
+      "get_lineage.column_downstream",
+      "get_lineage.dataset_downstream"
+    ],
+    "tool_failures": [],
+    "executions": [
+      {
+        "tool": "get_entities",
+        "operation": "get_entities.root",
+        "status": "success",
+        "duration_ms": 208,
+        "result_summary": "Root entity context was retrieved from DataHub.",
+        "evidence_references": [
+          "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)"
+        ]
+      },
+      {
+        "tool": "get_lineage",
+        "operation": "get_lineage.column_downstream",
+        "status": "success",
+        "duration_ms": 70,
+        "result_summary": "Column-level downstream lineage returned 0 asset reference(s).",
+        "evidence_references": []
+      },
+      {
+        "tool": "get_lineage",
+        "operation": "get_lineage.dataset_downstream",
+        "status": "success",
+        "duration_ms": 289,
+        "result_summary": "Dataset-level downstream lineage returned 24 asset reference(s).",
+        "evidence_references": [
+          "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry.explore.order_details,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:dbt,b2fd91.ORDER_ENTRY_DB.analytics.order_history,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry-looker.view.order_details,PROD)",
+          "urn:li:dashboard:(powerbi,b2fd91.reports.66666666-7777-8888-9999-000000000000)",
+          "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.ORDER_DETAILS,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.b980a8c5-28eb-119e-f6ca-4da32732e5be,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.c067553a-127e-a871-14a0-5f32cb032c78,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f8fb6a0b-7be6-690b-cc45-3c6e0fd2bcde,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.fadbf744-48be-0929-a47c-5786327a3343,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Customer_Analytics_Measures,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Essential_KPI_Measures,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Geographic_Measures,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Product_Perfromance_Measures,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_history,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.37fcfb15-34ae-973a-5ae3-cf63691d48e3,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.4a3af1dd-fd0c-7077-d5fd-aa2fdf87cb23,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.8bfe7483-1c9a-a0e1-ec84-57207dd37a15,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f32082e5-06b8-f46e-9047-4611fffe66b0,PROD)",
+          "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.217abe0d5c1cd421c384)",
+          "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.3f48c0bf859b2d14dcd0)",
+          "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.83a9aaa3207edd6c721e)",
+          "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.85e432543b30346a0507)",
+          "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Time_Inteligence_Measures,PROD)",
+          "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details_replica,PROD)"
+        ]
+      }
+    ],
+    "fallback_occurred": true,
+    "fallback_reason": "Column-level Agent Context Kit lineage returned no usable downstream evidence; dataset-level lineage was requested.",
+    "duration_ms": 572,
+    "context_evidence_references": [
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+        "label": "Order Details",
+        "evidence_type": "root_entity",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry.explore.order_details,PROD)",
+        "label": "Order Details",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,b2fd91.ORDER_ENTRY_DB.analytics.order_history,PROD)",
+        "label": "Order History",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry-looker.view.order_details,PROD)",
+        "label": "Order Details",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dashboard:(powerbi,b2fd91.reports.66666666-7777-8888-9999-000000000000)",
+        "label": "Datahub Order Entries",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.ORDER_DETAILS,PROD)",
+        "label": "Order Details",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.b980a8c5-28eb-119e-f6ca-4da32732e5be,PROD)",
+        "label": "Promotions",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.c067553a-127e-a871-14a0-5f32cb032c78,PROD)",
+        "label": "Order Mode",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f8fb6a0b-7be6-690b-cc45-3c6e0fd2bcde,PROD)",
+        "label": "Orders By Day",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.fadbf744-48be-0929-a47c-5786327a3343,PROD)",
+        "label": "Top Product Category",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Customer_Analytics_Measures,PROD)",
+        "label": "Customer Analytics Measures",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Essential_KPI_Measures,PROD)",
+        "label": "Essential KPI Measures",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Geographic_Measures,PROD)",
+        "label": "Geographic Measures",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Product_Perfromance_Measures,PROD)",
+        "label": "Product Perfromance Measures",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_history,PROD)",
+        "label": "Order History",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.37fcfb15-34ae-973a-5ae3-cf63691d48e3,PROD)",
+        "label": "Custom SQL Query",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.4a3af1dd-fd0c-7077-d5fd-aa2fdf87cb23,PROD)",
+        "label": "Custom SQL Query",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.8bfe7483-1c9a-a0e1-ec84-57207dd37a15,PROD)",
+        "label": "Custom SQL Query",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f32082e5-06b8-f46e-9047-4611fffe66b0,PROD)",
+        "label": "Custom SQL Query",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.217abe0d5c1cd421c384)",
+        "label": "Customer Analysis",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.3f48c0bf859b2d14dcd0)",
+        "label": "Geographics",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.83a9aaa3207edd6c721e)",
+        "label": "Executive Summary",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.85e432543b30346a0507)",
+        "label": "DAX Visual",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Time_Inteligence_Measures,PROD)",
+        "label": "Time Inteligence Measures",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      },
+      {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details_replica,PROD)",
+        "label": "Order Details Replica",
+        "evidence_type": "dataset_lineage",
+        "source": "datahub_agent_context"
+      }
+    ],
+    "narrative": "The read-only Agent Context Kit workflow resolved context for Order Details and returned 24 downstream reference(s) through dataset-level fallback lineage. The authoritative DataHub provider independently normalized 24 unique downstream asset(s) across 5 platform(s). LineageShield's deterministic policy alone calculates the risk score and merge decision.",
+    "limitations": [
+      "No LLM or paid model API was called; the narrative is deterministic.",
+      "Agent Context Kit evidence cannot alter risk points, approvals, decisions, or mutations.",
+      "Timed-out synchronous SDK work may finish in its worker thread after LineageShield stops awaiting it."
+    ]
+  }
+}
+

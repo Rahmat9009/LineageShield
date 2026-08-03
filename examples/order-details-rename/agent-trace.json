@@ -1,0 +1,235 @@
+{
+  "status": "completed",
+  "executed": true,
+  "toolkit": "datahub-agent-context",
+  "toolkit_version": "1.6.0.17",
+  "mode": "deterministic_read_only",
+  "llm_used": false,
+  "narrative_source": "deterministic_orchestration",
+  "tools_requested": [
+    "get_entities.root",
+    "get_lineage.column_downstream",
+    "get_lineage.dataset_downstream"
+  ],
+  "tools_succeeded": [
+    "get_entities.root",
+    "get_lineage.column_downstream",
+    "get_lineage.dataset_downstream"
+  ],
+  "tool_failures": [],
+  "executions": [
+    {
+      "tool": "get_entities",
+      "operation": "get_entities.root",
+      "status": "success",
+      "duration_ms": 208,
+      "result_summary": "Root entity context was retrieved from DataHub.",
+      "evidence_references": [
+        "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)"
+      ]
+    },
+    {
+      "tool": "get_lineage",
+      "operation": "get_lineage.column_downstream",
+      "status": "success",
+      "duration_ms": 70,
+      "result_summary": "Column-level downstream lineage returned 0 asset reference(s).",
+      "evidence_references": []
+    },
+    {
+      "tool": "get_lineage",
+      "operation": "get_lineage.dataset_downstream",
+      "status": "success",
+      "duration_ms": 289,
+      "result_summary": "Dataset-level downstream lineage returned 24 asset reference(s).",
+      "evidence_references": [
+        "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry.explore.order_details,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:dbt,b2fd91.ORDER_ENTRY_DB.analytics.order_history,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry-looker.view.order_details,PROD)",
+        "urn:li:dashboard:(powerbi,b2fd91.reports.66666666-7777-8888-9999-000000000000)",
+        "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.ORDER_DETAILS,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.b980a8c5-28eb-119e-f6ca-4da32732e5be,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.c067553a-127e-a871-14a0-5f32cb032c78,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f8fb6a0b-7be6-690b-cc45-3c6e0fd2bcde,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.fadbf744-48be-0929-a47c-5786327a3343,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Customer_Analytics_Measures,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Essential_KPI_Measures,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Geographic_Measures,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Product_Perfromance_Measures,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_history,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.37fcfb15-34ae-973a-5ae3-cf63691d48e3,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.4a3af1dd-fd0c-7077-d5fd-aa2fdf87cb23,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.8bfe7483-1c9a-a0e1-ec84-57207dd37a15,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f32082e5-06b8-f46e-9047-4611fffe66b0,PROD)",
+        "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.217abe0d5c1cd421c384)",
+        "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.3f48c0bf859b2d14dcd0)",
+        "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.83a9aaa3207edd6c721e)",
+        "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.85e432543b30346a0507)",
+        "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Time_Inteligence_Measures,PROD)",
+        "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details_replica,PROD)"
+      ]
+    }
+  ],
+  "fallback_occurred": true,
+  "fallback_reason": "Column-level Agent Context Kit lineage returned no usable downstream evidence; dataset-level lineage was requested.",
+  "duration_ms": 572,
+  "context_evidence_references": [
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "label": "Order Details",
+      "evidence_type": "root_entity",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry.explore.order_details,PROD)",
+      "label": "Order Details",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,b2fd91.ORDER_ENTRY_DB.analytics.order_history,PROD)",
+      "label": "Order History",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,b2fd91.order-entry-looker.view.order_details,PROD)",
+      "label": "Order Details",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dashboard:(powerbi,b2fd91.reports.66666666-7777-8888-9999-000000000000)",
+      "label": "Datahub Order Entries",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.ORDER_DETAILS,PROD)",
+      "label": "Order Details",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.b980a8c5-28eb-119e-f6ca-4da32732e5be,PROD)",
+      "label": "Promotions",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.c067553a-127e-a871-14a0-5f32cb032c78,PROD)",
+      "label": "Order Mode",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f8fb6a0b-7be6-690b-cc45-3c6e0fd2bcde,PROD)",
+      "label": "Orders By Day",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.fadbf744-48be-0929-a47c-5786327a3343,PROD)",
+      "label": "Top Product Category",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Customer_Analytics_Measures,PROD)",
+      "label": "Customer Analytics Measures",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Essential_KPI_Measures,PROD)",
+      "label": "Essential KPI Measures",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Geographic_Measures,PROD)",
+      "label": "Geographic Measures",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Product_Perfromance_Measures,PROD)",
+      "label": "Product Perfromance Measures",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_history,PROD)",
+      "label": "Order History",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.37fcfb15-34ae-973a-5ae3-cf63691d48e3,PROD)",
+      "label": "Custom SQL Query",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.4a3af1dd-fd0c-7077-d5fd-aa2fdf87cb23,PROD)",
+      "label": "Custom SQL Query",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.8bfe7483-1c9a-a0e1-ec84-57207dd37a15,PROD)",
+      "label": "Custom SQL Query",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:tableau,b2fd91.f32082e5-06b8-f46e-9047-4611fffe66b0,PROD)",
+      "label": "Custom SQL Query",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.217abe0d5c1cd421c384)",
+      "label": "Customer Analysis",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.3f48c0bf859b2d14dcd0)",
+      "label": "Geographics",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.83a9aaa3207edd6c721e)",
+      "label": "Executive Summary",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:chart:(powerbi,b2fd91.pages.66666666-7777-8888-9999-000000000000.85e432543b30346a0507)",
+      "label": "DAX Visual",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:powerbi,b2fd91.datahub_order_entries.Time_Inteligence_Measures,PROD)",
+      "label": "Time Inteligence Measures",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details_replica,PROD)",
+      "label": "Order Details Replica",
+      "evidence_type": "dataset_lineage",
+      "source": "datahub_agent_context"
+    }
+  ],
+  "narrative": "The read-only Agent Context Kit workflow resolved context for Order Details and returned 24 downstream reference(s) through dataset-level fallback lineage. The authoritative DataHub provider independently normalized 24 unique downstream asset(s) across 5 platform(s). LineageShield's deterministic policy alone calculates the risk score and merge decision.",
+  "limitations": [
+    "No LLM or paid model API was called; the narrative is deterministic.",
+    "Agent Context Kit evidence cannot alter risk points, approvals, decisions, or mutations.",
+    "Timed-out synchronous SDK work may finish in its worker thread after LineageShield stops awaiting it."
+  ]
+}
+

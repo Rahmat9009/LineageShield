@@ -1,0 +1,12 @@
+version: 2
+models:
+  - name: order_details
+    columns:
+      - name: PURCHASE_ID
+        tests:
+          - not_null
+          - accepted_values:
+              config:
+                severity: warn
+
+

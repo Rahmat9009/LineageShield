@@ -1,0 +1,60 @@
+{
+  "mutations_enabled": false,
+  "expires_at": "2026-08-03T10:39:24.883981Z",
+  "record": {
+    "analysis_id": "12d3b0db-9393-4c8c-87ce-a25ac57dbabf",
+    "analysis_timestamp": "2026-08-03T10:09:24.883981Z",
+    "root_asset": {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,b2fd91.order_entry_db.analytics.order_details,PROD)",
+      "name": "Order Details",
+      "platform": "snowflake"
+    },
+    "proposed_change": {
+      "change_type": "rename",
+      "column": "ORDER_ID",
+      "new_value": "PURCHASE_ID",
+      "reason": "Standardize order identifiers across warehouse and BI assets"
+    },
+    "decision": "BLOCK",
+    "risk_score": 97,
+    "risk_level": "CRITICAL",
+    "affected_asset_count": 24,
+    "required_approvals": [
+      "Andrea Garcia",
+      "Data Platform Team",
+      "Fiona Green",
+      "Ian Chen",
+      "Karen Okonkwo",
+      "Marco Santos",
+      "Priya Sharma",
+      "Sarah Chen"
+    ],
+    "rationale": "This rename reaches 24 downstream asset(s), including Datahub Order Entries, Customer Analysis, Geographics. The strongest deterministic evidence is downstream dashboards and charts, large downstream blast radius. The score is 97/100, at or above the 50-point block threshold, so the merge decision is BLOCK.",
+    "evidence_summary": [
+      "+12 Rename operation: The operation has a base risk weight of 12.",
+      "+20 Large downstream blast radius: 24 downstream assets are affected.",
+      "+25 Downstream dashboards and charts: Datahub Order Entries, Customer Analysis, Geographics, Executive Summary, DAX Visual",
+      "+20 Business-critical assets: Order Details (inferred fallback), Datahub Order Entries (inferred fallback), Order Details (inferred fallback), Customer Analytics Measures (inferred fallback), Essential KPI Measures (inferred fallback), Geographic Measures (inferred fallback), Product Perfromance Measures (inferred fallback), Order History (inferred fallback)",
+      "+10 Existing quality failure: Order History",
+      "+10 Cross-team coordination: 10 owner(s): Andrea Garcia, Backend Engineering Team, Data Platform Team, David Kim, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen"
+    ],
+    "migration_summary": "First generated migration step (not executed): ALTER TABLE b2fd91.order_entry_db.analytics.order_details",
+    "rollback_summary": "Pause deployments that consume PURCHASE_ID.; Rename PURCHASE_ID back to ORDER_ID.; Restore the previous compatibility view.; Re-run downstream data-quality checks.",
+    "no_migration_executed": true
+  },
+  "mutation": {
+    "operation": "patch_editable_description",
+    "aspect": "editableDatasetProperties",
+    "field": "description",
+    "managed_section": "<!-- LINEAGESHIELD:BEGIN 12d3b0db-9393-4c8c-87ce-a25ac57dbabf -->\n## LineageShield change-impact record\n\n- **Analysis ID:** `12d3b0db-9393-4c8c-87ce-a25ac57dbabf`\n- **Analysis timestamp:** 2026-08-03T10:09:24.883981+00:00\n- **Proposed change:** rename\n- **Affected column:** `ORDER_ID`\n- **New value:** `PURCHASE_ID`\n- **Merge decision:** **BLOCK**\n- **Risk:** 97/100 (CRITICAL)\n- **Affected assets:** 24\n- **Required approvals:** Andrea Garcia, Data Platform Team, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n- **Review rationale:** This rename reaches 24 downstream asset(s), including Datahub Order Entries, Customer Analysis, Geographics. The strongest deterministic evidence is downstream dashboards and charts, large downstream blast radius. The score is 97/100, at or above the 50-point block threshold, so the merge decision is BLOCK.\n- **Proposal rationale:** Standardize order identifiers across warehouse and BI assets\n\n### Deterministic evidence\n- +12 Rename operation: The operation has a base risk weight of 12.\n- +20 Large downstream blast radius: 24 downstream assets are affected.\n- +25 Downstream dashboards and charts: Datahub Order Entries, Customer Analysis, Geographics, Executive Summary, DAX Visual\n- +20 Business-critical assets: Order Details (inferred fallback), Datahub Order Entries (inferred fallback), Order Details (inferred fallback), Customer Analytics Measures (inferred fallback), Essential KPI Measures (inferred fallback), Geographic Measures (inferred fallback), Product Perfromance Measures (inferred fallback), Order History (inferred fallback)\n- +10 Existing quality failure: Order History\n- +10 Cross-team coordination: 10 owner(s): Andrea Garcia, Backend Engineering Team, Data Platform Team, David Kim, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n\n### Generated safeguard summary\n- **Migration:** First generated migration step (not executed): ALTER TABLE b2fd91.order_entry_db.analytics.order_details\n- **Rollback:** Pause deployments that consume PURCHASE_ID.; Rename PURCHASE_ID back to ORDER_ID.; Restore the previous compatibility view.; Re-run downstream data-quality checks.\n\n_LineageShield recorded review metadata only. No migration SQL was executed._\n<!-- LINEAGESHIELD:END 12d3b0db-9393-4c8c-87ce-a25ac57dbabf -->",
+    "resulting_description": "Details of orders.\n\n<!-- LINEAGESHIELD:BEGIN 0129b291-4587-47bc-8cd0-d295299bdee9 -->\n## LineageShield change-impact record\n\n- **Analysis ID:** `0129b291-4587-47bc-8cd0-d295299bdee9`\n- **Analysis timestamp:** 2026-08-02T22:03:28.757058+00:00\n- **Proposed change:** rename\n- **Affected column:** `ORDER_ID`\n- **New value:** `PURCHASE_ID`\n- **Merge decision:** **BLOCK**\n- **Risk:** 97/100 (CRITICAL)\n- **Affected assets:** 24\n- **Required approvals:** Andrea Garcia, Data Platform Team, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n- **Review rationale:** This rename reaches 24 downstream asset(s), including Datahub Order Entries, Customer Analysis, Geographics. The strongest deterministic evidence is downstream dashboards and charts, large downstream blast radius. The score is 97/100, at or above the 50-point block threshold, so the merge decision is BLOCK.\n- **Proposal rationale:** LineageShield live write-back verification\n\n### Deterministic evidence\n- +12 Rename operation: The operation has a base risk weight of 12.\n- +20 Large downstream blast radius: 24 downstream assets are affected.\n- +25 Downstream dashboards and charts: Datahub Order Entries, Customer Analysis, Geographics, Executive Summary, DAX Visual\n- +20 Business-critical assets: Order Details (inferred fallback), Datahub Order Entries (inferred fallback), Order Details (inferred fallback), Customer Analytics Measures (inferred fallback), Essential KPI Measures (inferred fallback), Geographic Measures (inferred fallback), Product Perfromance Measures (inferred fallback), Order History (inferred fallback)\n- +10 Existing quality failure: Order History\n- +10 Cross-team coordination: 10 owner(s): Andrea Garcia, Backend Engineering Team, Data Platform Team, David Kim, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n\n### Generated safeguard summary\n- **Migration:** First generated migration step (not executed): ALTER TABLE b2fd91.order_entry_db.analytics.order_details\n- **Rollback:** Pause deployments that consume PURCHASE_ID.; Rename PURCHASE_ID back to ORDER_ID.; Restore the previous compatibility view.; Re-run downstream data-quality checks.\n\n_LineageShield recorded review metadata only. No migration SQL was executed._\n<!-- LINEAGESHIELD:END 0129b291-4587-47bc-8cd0-d295299bdee9 -->\n\n<!-- LINEAGESHIELD:BEGIN 12d3b0db-9393-4c8c-87ce-a25ac57dbabf -->\n## LineageShield change-impact record\n\n- **Analysis ID:** `12d3b0db-9393-4c8c-87ce-a25ac57dbabf`\n- **Analysis timestamp:** 2026-08-03T10:09:24.883981+00:00\n- **Proposed change:** rename\n- **Affected column:** `ORDER_ID`\n- **New value:** `PURCHASE_ID`\n- **Merge decision:** **BLOCK**\n- **Risk:** 97/100 (CRITICAL)\n- **Affected assets:** 24\n- **Required approvals:** Andrea Garcia, Data Platform Team, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n- **Review rationale:** This rename reaches 24 downstream asset(s), including Datahub Order Entries, Customer Analysis, Geographics. The strongest deterministic evidence is downstream dashboards and charts, large downstream blast radius. The score is 97/100, at or above the 50-point block threshold, so the merge decision is BLOCK.\n- **Proposal rationale:** Standardize order identifiers across warehouse and BI assets\n\n### Deterministic evidence\n- +12 Rename operation: The operation has a base risk weight of 12.\n- +20 Large downstream blast radius: 24 downstream assets are affected.\n- +25 Downstream dashboards and charts: Datahub Order Entries, Customer Analysis, Geographics, Executive Summary, DAX Visual\n- +20 Business-critical assets: Order Details (inferred fallback), Datahub Order Entries (inferred fallback), Order Details (inferred fallback), Customer Analytics Measures (inferred fallback), Essential KPI Measures (inferred fallback), Geographic Measures (inferred fallback), Product Perfromance Measures (inferred fallback), Order History (inferred fallback)\n- +10 Existing quality failure: Order History\n- +10 Cross-team coordination: 10 owner(s): Andrea Garcia, Backend Engineering Team, Data Platform Team, David Kim, Fiona Green, Ian Chen, Karen Okonkwo, Marco Santos, Priya Sharma, Sarah Chen\n\n### Generated safeguard summary\n- **Migration:** First generated migration step (not executed): ALTER TABLE b2fd91.order_entry_db.analytics.order_details\n- **Rollback:** Pause deployments that consume PURCHASE_ID.; Rename PURCHASE_ID back to ORDER_ID.; Restore the previous compatibility view.; Re-run downstream data-quality checks.\n\n_LineageShield recorded review metadata only. No migration SQL was executed._\n<!-- LINEAGESHIELD:END 12d3b0db-9393-4c8c-87ce-a25ac57dbabf -->",
+    "already_applied": false,
+    "preserves_existing_description": true
+  },
+  "warnings": [
+    "DataHub mutations are disabled. Restart with DATAHUB_MUTATIONS_ENABLED=true to apply.",
+    "This preview is read-only. No migration SQL will be executed.",
+    "Apply re-reads the latest description before patching to preserve concurrent edits."
+  ]
+}
+
