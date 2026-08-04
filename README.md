@@ -6,7 +6,9 @@
 
 **Challenge category:** DataHub Agent Hackathon
 
-> **Screenshot placeholder:** Real screenshots have not been added yet. See the [exact manual capture checklist](docs/screenshots/README.md); this repository does not use broken placeholder image links.
+![LineageShield blocked schema-change review](docs/screenshots/02-block-decision-lineage.png)
+
+> Verified live DataHub example: `ORDER_ID` → `PURCHASE_ID`, **BLOCK**, **97/100**, and **24 affected assets**. [View the complete screenshot set](docs/screenshots/).
 
 ## 30-second judge overview
 
@@ -417,3 +419,4 @@ tests/           Unit and FastAPI tests
 ```
 
 LineageShield is licensed under Apache 2.0.
+
