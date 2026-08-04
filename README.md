@@ -6,6 +6,10 @@
 
 **Challenge category:** DataHub Agent Hackathon
 
+🌐 **Live demo:** https://lineageshield.onrender.com
+
+> The public deployment uses the clearly labeled bundled demo dataset with DataHub mutations disabled. Verified live DataHub evidence is preserved in the repository screenshots and committed example.
+
 ![LineageShield blocked schema-change review](docs/screenshots/02-block-decision-lineage.png)
 
 > Verified live DataHub example: `ORDER_ID` → `PURCHASE_ID`, **BLOCK**, **97/100**, and **24 affected assets**. [View the complete screenshot set](docs/screenshots/).
