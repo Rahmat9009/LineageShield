@@ -202,7 +202,7 @@ Demo flow for judges:
 - Structured provider health and analysis errors without browser alerts
 - A two-step, root-only DataHub write-back with an exact preview, explicit confirmation, read-back receipt, and idempotent repeat behavior
 - Agent Context Kit 1.6.0.17 execution during every normal live investigation, with sanitized tool audit data and no paid model dependency
-- A reusable, validated `schema-change-impact-review` skill under `skills/` for possible future contribution to DataHub Skills
+- A reusable, validated `schema-change-impact-review` skill under `skills/`, submitted upstream in [DataHub Skills PR #87](https://github.com/datahub-project/datahub-skills/pull/87)
 
 ## What makes this an agent
 
@@ -256,7 +256,7 @@ Every `AnalysisResult` contains an `agent_trace` with:
 
 If the package, client, or a tool is unavailable, LineageShield returns that degraded state honestly and continues only when the deterministic provider already supplied usable context. Agent output never creates lineage, owners, quality, usage, approvals, risk points, or mutation outcomes.
 
-The reusable DataHub skill is [skills/schema-change-impact-review/SKILL.md](skills/schema-change-impact-review/SKILL.md). It follows the current DataHub Skills layout with self-contained examples and risk/safety references. It has been validated locally but has not been contributed upstream.
+The reusable DataHub skill is [skills/schema-change-impact-review/SKILL.md](skills/schema-change-impact-review/SKILL.md). It follows the current DataHub Skills layout with self-contained examples and risk/safety references. It has been validated locally and submitted upstream in [DataHub Skills PR #87](https://github.com/datahub-project/datahub-skills/pull/87), where it is awaiting maintainer review.
 
 ## Safe DataHub write-back
 
@@ -419,4 +419,3 @@ tests/           Unit and FastAPI tests
 ```
 
 LineageShield is licensed under Apache 2.0.
-
